@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>build.music</groupId>
+        <artifactId>music</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <artifactId>music-server</artifactId>
+    <name>music-server</name>
+    <dependencies>
+        <dependency>
+            <groupId>build.music</groupId>
+            <artifactId>music-mcp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>build.serve</groupId>
+            <artifactId>serve-mcp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>build.serve</groupId>
+            <artifactId>serve-application</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>build.base</groupId>
+            <artifactId>base-network</artifactId>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>build.music.server.MusicMcpServer</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

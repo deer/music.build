@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>build.music</groupId>
+        <artifactId>music</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <artifactId>music-midi</artifactId>
+    <name>music-midi</name>
+    <dependencies>
+        <dependency>
+            <groupId>build.base</groupId>
+            <artifactId>base-marshalling</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>build.music</groupId>
+            <artifactId>music-pitch</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>build.music</groupId>
+            <artifactId>music-time</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>build.music</groupId>
+            <artifactId>music-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>build.music</groupId>
+            <artifactId>music-score</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>
