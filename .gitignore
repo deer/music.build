@@ -10,3 +10,5 @@ target/
 *.iml
 
 generated_tracks/
+
+node_modules/

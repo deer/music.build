@@ -1,0 +1,9 @@
+/* Tailwind scans this project's source for classes you write. */
+@import "tailwindcss";
+/* Framework styles: design tokens, markdown rules, and pre-compiled
+   Tailwind utilities for every class used inside @denote/core components. */
+@import "@denote/core/styles.css";
+
+@source "./";
+
+@variant dark (&:where(.dark, .dark *));

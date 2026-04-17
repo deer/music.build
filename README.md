@@ -24,21 +24,15 @@ No piano roll. No GUI. The composition emerges from tool calls.
 - Java 25 (`java -version` should report `25.x`)
 - LilyPond 2.24+ (optional — required only for PDF export; MIDI works without it)
 
-**Clone and build**
+**Clone and run**
 
 ```bash
 git clone https://github.com/deer/music.build
 cd music.build
-./mvnw package -DskipTests -pl music-server -am
+./mvnw exec:java -pl music-server
 ```
 
 All dependencies (`base.build`, `codemodel.build`, `serve.build`) are on Maven Central — no local installs required.
-
-**Start the server**
-
-```bash
-./mvnw exec:java -pl music-server
-```
 
 The MCP server listens on `http://localhost:3000/mcp`. To use a different port:
 
@@ -48,7 +42,7 @@ PORT=4000 ./mvnw exec:java -pl music-server
 
 **Connect to Claude Desktop**
 
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows), adjusting the port if you changed it:
 
 ```json
 {
