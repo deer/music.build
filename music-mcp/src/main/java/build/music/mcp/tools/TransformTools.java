@@ -193,7 +193,9 @@ public final class TransformTools {
                 case Note n ->
                     (NoteEvent) Note.of(pt.apply(n.pitch()), n.duration(), n.velocity(), n.articulation(), n.tied());
                 case Rest r -> (NoteEvent) r;
-                case Chord c -> (NoteEvent) c; // pass chords through pitch transforms unchanged
+                case Chord c -> (NoteEvent) Chord.of(
+                    c.pitches().stream().map(pt::apply).toList(),
+                    c.duration(), c.velocity());
             })
             .toList();
     }

@@ -44,7 +44,9 @@ public final class Transforms {
                 .map(event -> switch (event) {
                     case Note n -> (NoteEvent) Note.of(invert.apply(n.pitch()), n.duration(), n.velocity(), n.articulation(), n.tied());
                     case build.music.core.Rest r -> r;
-                    case Chord c -> (NoteEvent) c; // pass chords through unchanged in retrograde inversion
+                    case Chord c -> (NoteEvent) Chord.of(
+                        c.pitches().stream().map(p -> invert.apply(p)).toList(),
+                        c.duration(), c.velocity());
                 })
                 .toList();
         };

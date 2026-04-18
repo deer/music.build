@@ -41,4 +41,5 @@ class TransposeTests {
         assertInstanceOf(Rest.class, result.get(1));
         assertEquals(67, ((Note) result.get(0)).midi()); // G4
     }
+
 }

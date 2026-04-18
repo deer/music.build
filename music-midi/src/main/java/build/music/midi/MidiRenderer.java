@@ -120,14 +120,27 @@ public final class MidiRenderer {
                     off.setMessage(ShortMessage.NOTE_OFF, part.midiChannel(), n.midi(), 0);
                     track.add(new MidiEvent(off, actualOnTick + soundingTicks));
                 } else if (!tiedAbsorbed[i] && event instanceof Chord c) {
-                    // All chord pitches sound simultaneously — no swing applied to chords
+                    long chordOnTick = tick;
+                    final long chordSoundingTicks;
+                    if (swingDelay > 0 && isEighth) {
+                        final long eighthTicks = TICKS_PER_QUARTER / 2;
+                        final boolean isOffBeat = (tick / eighthTicks) % 2 == 1;
+                        if (isOffBeat) {
+                            chordOnTick = tick + swingDelay;
+                            chordSoundingTicks = eighthTicks - swingDelay;
+                        } else {
+                            chordSoundingTicks = eighthTicks + swingDelay;
+                        }
+                    } else {
+                        chordSoundingTicks = notatedTicks;
+                    }
                     for (final Pitch p : c.pitches()) {
                         final ShortMessage on = new ShortMessage();
                         on.setMessage(ShortMessage.NOTE_ON, part.midiChannel(), p.midi(), c.velocity().value());
-                        track.add(new MidiEvent(on, tick));
+                        track.add(new MidiEvent(on, chordOnTick));
                         final ShortMessage off = new ShortMessage();
                         off.setMessage(ShortMessage.NOTE_OFF, part.midiChannel(), p.midi(), 0);
-                        track.add(new MidiEvent(off, tick + notatedTicks));
+                        track.add(new MidiEvent(off, chordOnTick + chordSoundingTicks));
                     }
                 }
                 // Advance time (including absorbed tie continuations)

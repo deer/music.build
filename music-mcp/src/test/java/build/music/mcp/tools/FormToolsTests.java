@@ -95,4 +95,20 @@ class FormToolsTests {
         assertTrue(chords.get(3).toString().contains("Bb"),
             "bar 3 should be Bbmaj7 (B section offset by 2), got: " + chords.get(3));
     }
+
+    @Test
+    void setBarChords_afterCreateSection_stillCaptured() {
+        // harmony.set_bars called AFTER form.create_section — must still work
+        VoiceTools.createVoice(ctx, "melody", "C4/h C4/h C4/h C4/h");
+        FormTools.createSection(ctx, "A", "melody", 2);
+        HarmonyTools.setBarChords(ctx, "1:Dm7 2:G7");
+
+        ToolResult result = FormTools.buildScore(ctx);
+        assertTrue(result.success(), result.message());
+
+        var chords = ctx.getBarChords();
+        assertNotNull(chords.get(1), "bar 1 must be present even when set_bars called after create_section");
+        assertTrue(chords.get(1).toString().contains("Dm"),
+            "bar 1 should be Dm7, got: " + chords.get(1));
+    }
 }

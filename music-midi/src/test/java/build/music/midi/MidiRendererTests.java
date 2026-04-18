@@ -1,8 +1,10 @@
 package build.music.midi;
 
+import build.music.core.Chord;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
 import build.music.core.Rest;
+import build.music.core.Velocity;
 import build.music.pitch.SpelledPitch;
 import build.music.score.Part;
 import build.music.score.Score;
@@ -69,6 +71,35 @@ class MidiRendererTests {
         List<NoteEvent> events = List.of(C4Q, Rest.of(RhythmicValue.QUARTER), E4Q);
         Sequence seq = MidiRenderer.render(events, Tempo.of(120), 0, 0);
         assertEquals(2, seq.getTracks().length); // conductor + 1 track
+    }
+
+    @Test
+    void swing_appliedToOffBeatEighthChords() throws InvalidMidiDataException {
+        // Two eighth-note chords: beat 1 (on-beat) and beat 2 (off-beat)
+        var c4 = SpelledPitch.parse("C4");
+        var e4 = SpelledPitch.parse("E4");
+        var chord = Chord.of(List.of(c4, e4), RhythmicValue.EIGHTH, Velocity.MF);
+        var voice = Voice.of("comp", List.of(chord, chord));
+        // 2:1 swing ratio = 0.667
+        var score = Score.builder("Test")
+            .swingRatio(Fraction.of(2, 3))
+            .part(Part.piano("Piano", voice))
+            .build();
+
+        Sequence seq = MidiRenderer.render(score);
+        Track track = seq.getTracks()[1]; // part track
+
+        // Collect all NOTE_ON ticks
+        long[] onTicks = java.util.stream.IntStream.range(0, track.size())
+            .mapToObj(track::get)
+            .filter(e -> e.getMessage() instanceof ShortMessage sm && sm.getCommand() == ShortMessage.NOTE_ON)
+            .mapToLong(MidiEvent::getTick)
+            .distinct().sorted().toArray();
+
+        // On-beat chord: tick 0; off-beat chord: tick 240 + swingDelay
+        // swingDelay = round((2/3 - 0.5) * 480) = round(0.1667 * 480) = round(80) = 80
+        assertEquals(0, onTicks[0], "on-beat chord must start at tick 0");
+        assertEquals(320, onTicks[1], "off-beat chord must be swung to tick 320 (240 + 80)");
     }
 
     @Test

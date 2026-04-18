@@ -116,12 +116,7 @@ music.build/
 
 **Exports**: `build.music.pitch`, `build.music.pitch.typesystem`
 
-**Key gotchas**:
-- `SpelledPitch.intervalTo()` always computes ascending intervals within one octave — cannot compute descending or compound intervals
-- `SpelledInterval.simple()` is a stub that returns `this` — compound intervals are not reduced
-- `PitchClass` always spells black keys with sharps (CS, DS, FS, GS, AS) — no flat PitchClass members
-- `Enharmonic.areEnharmonic(a, b)` returns false if `a.equals(b)` — a pitch is never enharmonic with itself
-- Every `of(...)` factory calls `MusicCodeModel.current()` at construction; code outside a ScopedValue binding silently uses the static fallback singleton
+**Exports**: `build.music.pitch`, `build.music.pitch.typesystem`
 
 ---
 
@@ -143,11 +138,7 @@ music.build/
 | TimeSignature.java | beats/beatUnit; measureDuration; isCompound() |
 | MetricPosition.java | (measure, beatOffset); 0-based measure; isDownbeat() |
 
-**Key gotchas**:
-- `TimeSignature.isCompound()` only matches 8th-beat-unit meters (6/8, 9/8, 12/8) — 6/4 is classified simple
-- `TempoChange` "exponential" curve is actually quadratic ease-in (t²), not a true exponential
-- `Duration` is intentionally NOT sealed — `ScaledDuration` (music-transform) and `FractionDuration` (music-midi) are permitted types from other JPMS modules
-- After `Augment`, all durations become `ScaledDuration` — code that does `instanceof RhythmicValue` will fall through
+**Note**: `Duration` is intentionally NOT sealed — `ScaledDuration` (music-transform) and `FractionDuration` (music-midi) are cross-module permitted subtypes.
 
 ---
 
@@ -170,12 +161,7 @@ music.build/
 | TiedMarker.java | Presence-based boolean: INSTANCE present = note is tied |
 | OrderTrait.java | Preserves Chord pitch ordering for marshalling round-trip |
 
-**Key gotchas**:
-- `Chord.root()` returns lowest MIDI pitch, NOT the harmonic root — first inversion C major returns E
-- `Chord.inversion()` always returns 0 (documented stub)
-- `ChordSymbol.transpose()` uses octave 4 as scratch; discards octave info
-- `ChordQuality.intervals()` creates new `SpelledInterval` objects on every call — not memoized
-- Sealed `NoteEvent` enables exhaustive Java 21+ switch pattern matching in consumers
+**Note**: Sealed `NoteEvent` enables exhaustive Java 21+ switch pattern matching in consumers.
 
 ---
 
@@ -194,10 +180,7 @@ music.build/
 | NoteEventList.java | Marshalling adapter for List<List<NoteEvent>> inside Volta endings |
 | BarChordPair.java | Marshalling adapter for Map<Integer, ChordSymbol> entries |
 
-**Key gotchas**:
-- `Score.barChords()` can be null (unlike tempoChanges/structuredVoices which default to List.of()); always null-check
-- `Part.piano()` and `Part.strings()` both hardcode `midiChannel = 0`; multi-instrument scores need explicit channel assignment
-- `Score` depends on `music-harmony.Key` — these modules cannot be separated
+**Note**: `Score` depends on `music-harmony.Key` — these modules cannot be separated.
 
 ---
 
@@ -212,13 +195,6 @@ music.build/
 | VoiceOperations.java | concat, repeat, slice, sliceMeasures, merge, splitByMeasure, padToMeasure, measureCount |
 | MeasureSlice.java | Read-only view of one measure's events; completeness check via isComplete(TimeSignature) |
 
-**Key gotchas**:
-- `toBarredString()` is a stub — bar lines are never actually inserted
-- `merge()` assumes no overlapping notes (monophonic voices only; documented)
-- `padToMeasure()` fills only down to SIXTEENTH; sub-sixteenth positions leave a remainder
-- `sliceMeasures()` does NOT split notes that straddle a measure boundary — the event is included whole
-- `MeasureSlice.totalDuration` is caller-supplied and not validated against the actual event sum
-- `MeasureSlice.pitches()` excludes Chord events (only captures Note instances)
 
 ---
 
@@ -239,12 +215,7 @@ music.build/
 | Retrograde.java | Temporal reversal (reverses order only, not durations) |
 | Augment.java | Duration scaling by rational factor → produces ScaledDuration |
 
-**Key gotchas**:
-- After `Augment`, all durations become `ScaledDuration` (not RhythmicValue) — code that pattern-matches `instanceof RhythmicValue` falls through
-- `Transforms.retrogradeInversion()` applies Retrograde first, then Invert per note (not RI in that label order)
-- `Transforms.retrogradeInversion()` passes Chord events through without inverting pitches
-- `Invert` uses name-step mirroring that can produce double-sharp/flat spellings for pitches far from the axis
-- `Voice.transform()` takes `UnaryOperator<List<NoteEvent>>` — not `MelodicTransform` — due to module dependency constraints
+**Note**: `Voice.transform()` takes `UnaryOperator<List<NoteEvent>>` — not `MelodicTransform` — due to module dependency constraints (music-score cannot depend on music-transform).
 
 ---
 
@@ -266,14 +237,6 @@ music.build/
 | DiatonicTranspose.java | Step-wise transposition within a Key; throws for non-diatonic pitches |
 | KeySignature.java | Thin notation wrapper around Key; toLilyPond() |
 
-**Key gotchas**:
-- `Key.scale()` always uses NATURAL_MINOR — harmonic/melodic minor requires explicit Scale construction
-- `HarmonicAnalyzer.detectKey()` always spells black keys as sharps; Bb major may be returned as A# major
-- `Harmonizer.harmonize()` always emits whole notes regardless of time signature (documented limitation)
-- `Harmonizer.walkingBass()` is primarily designed for 4/4; other meters fall back to simpler patterns
-- `RomanNumeral.parse()` recognizes `bVII` flat prefix but does NOT apply it when resolving chordInKey — borrowed chords resolve to the diatonic degree
-- `DiatonicTranspose` silently passes Chord events through unchanged (does not transpose chord pitches)
-- `Key.dominant()` and `Key.subdominant()` always return major keys regardless of source mode
 
 ---
 
@@ -292,11 +255,6 @@ music.build/
 | InstrumentFamily.java | @Singular enum Trait: WOODWIND BRASS STRING KEYBOARD PERCUSSION VOCAL |
 | TransposingMarker.java | Presence-only @Singular enum Trait: INSTANCE |
 
-**Key gotchas**:
-- `transposing = true` does NOT mean `transposition` interval field is non-null — all catalog instruments have `transposition = null`
-- `byMidiProgram()` returns first match only; Trombone(57) wins over Bass Trombone(57)
-- `canPlay()` silently skips Chord events — chord voicings are never range-checked
-- STRING_QUARTET holds two references to the same `VIOLIN` singleton object
 
 ---
 
@@ -316,11 +274,6 @@ music.build/
 | ParallelMotionRule.java | Detects parallel 5ths/8ths between voice pairs by MIDI modulo 12 |
 | RangeRule.java | Checks notes against instrument writtenRange/comfortableRange |
 
-**Key gotchas**:
-- `ParallelMotionRule` silently skips voice pairs with different event counts — rhythmically independent counterpoint is entirely unchecked
-- `MeterRule` resets cursor on overflow, preventing cascade errors but potentially masking later problems
-- `VoiceLeadingRule` cannot detect augmented seconds — operates on MIDI semitone arithmetic only
-- `RuleSet.orchestration()` maps instrument assignments by voice name; parts not in the map get no range rule
 
 ---
 
@@ -338,13 +291,7 @@ music.build/
 | SectionVoicePair.java | @NonSingular marshalling adapter for Map<String, Voice> entries |
 | SectionEndingPair.java | @NonSingular marshalling adapter for Map<Integer, Section> endings |
 
-**Key gotchas**:
-- `FormBuilder.setEnding()` REMOVES the ending section from the play sequence (it is subsumed into the main section's ending map)
-- `FormalPlan.trimToMeasures()` cannot split a single event at a measure boundary — voice content must be metrically aligned
-- `buildRestVoice()` silently drops sub-sixteenth remainder durations
-- `Section.voices()` reconstructs the Map from traits on every call — no caching
-- `FormalPlan.toScore()` assigns channels sequentially modulo 16; more than 15 melodic voices causes channel collisions; channel 9 (drums) is not automatically avoided
-- Voices absent from a section get auto-generated rest voices of the correct duration
+**Note**: Voices absent from a section get auto-generated rest voices of the correct duration.
 
 ---
 
@@ -365,13 +312,6 @@ music.build/
 
 **Constants**: TICKS_PER_QUARTER = 480
 
-**Key gotchas**:
-- `MidiReader` always spells black keys as sharps — flat spellings are lost on read-back
-- `MidiPlayer.play()` blocks until end-of-track meta event — will hang if the event is missing
-- Swing applies only to single eighth `Note` events (duration exactly Fraction.EIGHTH); Chords are never swung
-- `MidiReader` is monophonic per track — simultaneous notes in a track are sequentialized
-- `MidiReader` snaps unusual tick durations to nearest standard value; exotic rhythms fall through to exact rational
-- Gradual tempo changes are implemented as one `0x51` MetaMessage per bar (not true MIDI tempo automation)
 
 ---
 
@@ -386,15 +326,7 @@ music.build/
 | LilyPondRenderer.java | Score → LilyPond source text; handles volta (StructuredVoice), ChordNames staff, clef, key, tuplets |
 | LilyPondEngraver.java | Subprocess wrapper: engravePdf/engravePng/isAvailable; probes three binary locations |
 
-**Key gotchas**:
-- LilyPond is a hard external dependency — always call `LilyPondEngraver.isAvailable()` before engraving
-- `\midi {}` is always emitted in the `.ly` source, so engraving also produces a `baseName.midi` side-effect file
-- Tuplet grouping is purely fraction-based — all consecutive same-fraction events are bracketed together, ignoring beat boundaries
-- `renderDuration()` approximates unknown fractions — may produce invalid LilyPond for exotic durations
-- Clef selection is a heuristic: treble if average MIDI ≥ 60, else bass
-- Temporary `.ly` files are not cleaned up after engraving
-- `findExecutable()` runs a subprocess on each engraving call (no caching)
-- `KeySignature.toLilyPond()` has dead-code in the flat special-case switch — all branches yield `"es"`
+**Note**: LilyPond is a hard external dependency — always call `LilyPondEngraver.isAvailable()` before engraving.
 
 ---
 
@@ -460,15 +392,6 @@ music.build/
 - `score.save`/`score.load` round-trip through codemodel JSON marshalling; `MusicCodeModel` must be bound before unmarshal
 - `restoreFrom(snapshot)` does NOT restore voiceDynamics/voiceArticulations — those are baked into note events
 
-**Key gotchas**:
-- `Chord` events pass through pitch transforms (invert/transpose) unchanged — documented limitation
-- Percussion voices (channel 9) skip `rules.check` but NOT transform tools — transforms on drum voices produce nonsense
-- `harmonize` always emits whole notes regardless of time signature
-- `harmony.set_bars` must be called BEFORE `form.create_section` for bar chords to be captured per section
-- `score.set_tempo_change` direction label (ritardando/accelerando) compares to global base tempo, not the BPM at startBar
-- `setBarChords()` has no error handling for non-integer bar numbers; throws uncaught NumberFormatException
-- `export.all` folder numbering counts existing directories at call time — no collision protection
-
 ---
 
 ### music-server
@@ -487,11 +410,6 @@ music.build/
 1. **Logging subscriber**: INFO on success (with duration), WARNING on failure, via System.Logger
 2. **Session log subscriber**: serializes each call to a JSON line `{ts, tool, args, durationMs, ok, error?}` and stores in `ctx.addSessionLogLine()`
 
-**Key gotchas**:
-- Port 3000 is hardcoded — no env var/config override
-- Single `CompositionContext` instance shared across all MCP requests (no per-session isolation)
-- `export.play` tool blocks the server handler thread for the duration of playback
-- Session log lines accumulate in memory in `ctx` until `export.all` is called — no automatic flush
 
 ---
 
@@ -562,31 +480,6 @@ sequenceDiagram
 - All rhythmic quantities are fractions of a whole note
 - `TICKS_PER_QUARTER = 480` in MIDI output
 
-## Gotchas
-
-**Architecture:**
-- `music-score` depends on `music-harmony.Key` — these modules cannot be separated
-- Single `CompositionContext` per process — no multi-user/multi-session support (by design; see README)
-- `form.build` destroys individual section voices in-place (replaces with assembled voice by name)
-- `Duration` cannot be sealed because subtypes (`ScaledDuration`, `FractionDuration`) live in separate JPMS modules
-
-**Pitch:**
-- `SpelledPitch.intervalTo()` only computes ascending intervals within one octave
-- `HarmonicAnalyzer.detectKey()` always returns sharp-spelled keys (Bb may come back as A#)
-- `Chord.root()` is lowest MIDI pitch, not harmonic root
-- Every `of(...)` factory silently falls back to a static MusicCodeModel if called outside a ScopedValue binding
-
-**Rendering:**
-- LilyPond tuplet detection groups ALL consecutive same-fraction events — may over-bracket
-- `Harmonizer.harmonize()` always outputs whole notes regardless of time signature
-- `MidiReader` always spells black keys as sharps on read-back
-- Swing only applies to single eighth `Note` events, not Chords
-- Engraving with LilyPond always produces a side-effect `.midi` file (due to `\midi {}` in every rendered source)
-
-**Tool surface:**
-- `assignChannel()` is not idempotent — repeated `score.assign_instrument` on same voice may change channel
-- `harmony.set_bars` must be called BEFORE `form.create_section` for bar chords to be captured per section
-- Session log only flushes on `export.all`; use `score.save` to checkpoint state independently
 
 ## Navigation Guide
 
