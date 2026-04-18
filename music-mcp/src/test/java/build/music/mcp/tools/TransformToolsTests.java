@@ -1,9 +1,13 @@
 package build.music.mcp.tools;
 
+import build.music.core.Chord;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
+import build.music.core.Velocity;
 import build.music.mcp.CompositionContext;
 import build.music.mcp.ToolResult;
+import build.music.pitch.SpelledPitch;
+import build.music.time.RhythmicValue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -109,5 +113,38 @@ class TransformToolsTests {
 
         ToolResult result = TransformTools.saveMotif(ctx, "melody", "bad", 5, 10);
         assertFalse(result.success());
+    }
+
+    @Test
+    void transpose_transposesChordPitches() {
+        var c4 = SpelledPitch.parse("C4");
+        var e4 = SpelledPitch.parse("E4");
+        var chord = Chord.of(List.of(c4, e4), RhythmicValue.QUARTER, Velocity.MF);
+        ctx.createVoice("comp", List.of(chord));
+
+        ToolResult result = TransformTools.transpose(ctx, "comp", "P5", "up", null);
+        assertTrue(result.success(), result.message());
+
+        var transposed = (Chord) ctx.getVoice("comp_transposed").get(0);
+        // C4 + P5 = G4 (67), E4 + P5 = B4 (71)
+        assertEquals(67, transposed.pitches().get(0).midi());
+        assertEquals(71, transposed.pitches().get(1).midi());
+    }
+
+    @Test
+    void invert_invertsChordPitches() {
+        var c4 = SpelledPitch.parse("C4");
+        var e4 = SpelledPitch.parse("E4");
+        var chord = Chord.of(List.of(c4, e4), RhythmicValue.QUARTER, Velocity.MF);
+        ctx.createVoice("comp", List.of(chord));
+
+        ToolResult result = TransformTools.invert(ctx, "comp", "C4", null);
+        assertTrue(result.success(), result.message());
+
+        var inverted = (Chord) ctx.getVoice("comp_inverted").get(0);
+        // C4 inverted around C4 = C4 (60); E4 inverted around C4 = Ab3 (56)
+        // Chord sorts ascending: Ab3 first, then C4
+        assertEquals(56, inverted.pitches().get(0).midi()); // Ab3
+        assertEquals(60, inverted.pitches().get(1).midi()); // C4
     }
 }

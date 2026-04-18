@@ -156,6 +156,18 @@ public final class FormBuilder {
         return sectionBarChords.getOrDefault(sectionName, Map.of());
     }
 
+    /** Return the name of the most recently added named section, or null if no sections exist. */
+    public String lastSectionName() {
+        if (namedSections.isEmpty()) {
+            return null;
+        }
+        String last = null;
+        for (final String name : namedSections.keySet()) {
+            last = name;
+        }
+        return last;
+    }
+
     public FormalPlan build() {
         if (sections.isEmpty()) {
             throw new IllegalStateException("FormalPlan must have at least one section");

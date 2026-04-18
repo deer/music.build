@@ -4,6 +4,8 @@ import build.music.core.Note;
 import build.music.core.NoteEvent;
 import build.music.pitch.NoteName;
 import build.music.pitch.SpelledPitch;
+import build.music.time.DottedValue;
+import build.music.time.Fraction;
 import build.music.time.RhythmicValue;
 import build.music.time.TimeSignature;
 import org.junit.jupiter.api.Test;
@@ -26,7 +28,7 @@ class HarmonizerTests {
             Note.of(SpelledPitch.parse("C4"), RhythmicValue.WHOLE)
         );
 
-        List<NoteEvent> harmony = Harmonizer.harmonize(melody, cMajor, progression, 3);
+        List<NoteEvent> harmony = Harmonizer.harmonize(melody, cMajor, progression, 3, TimeSignature.COMMON_TIME);
         assertEquals(4, harmony.size());
         // First chord should be C (root of I)
         assertEquals("C3", ((Note) harmony.get(0)).pitch().toString());
@@ -52,6 +54,26 @@ class HarmonizerTests {
         assertFalse(suggestion.chords().isEmpty());
         // Should suggest I (C major) for a melody of C-E-G-C
         assertEquals(ScaleDegree.I, suggestion.chords().get(0).degree());
+    }
+
+    @Test
+    void harmonize_waltzTime_producesDoттedHalfNotes() {
+        Key cMajor = Key.major(NoteName.C);
+        ChordProgression progression = ChordProgression.I_IV_V_I();
+        var dottedHalf = new DottedValue(RhythmicValue.HALF, 1);
+        List<NoteEvent> melody = List.of(
+            Note.of(SpelledPitch.parse("C4"), dottedHalf),
+            Note.of(SpelledPitch.parse("F4"), dottedHalf),
+            Note.of(SpelledPitch.parse("G4"), dottedHalf),
+            Note.of(SpelledPitch.parse("C4"), dottedHalf)
+        );
+
+        List<NoteEvent> harmony = Harmonizer.harmonize(melody, cMajor, progression, 3, TimeSignature.WALTZ_TIME);
+        assertEquals(4, harmony.size());
+        // Each chord should last one 3/4 measure = dotted half
+        Fraction expected = Fraction.of(3, 4);
+        harmony.forEach(e -> assertEquals(expected, e.duration().fraction(),
+            "Expected dotted-half duration in 3/4, got: " + e.duration().fraction()));
     }
 
     @Test

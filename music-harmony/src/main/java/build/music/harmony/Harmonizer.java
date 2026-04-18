@@ -41,19 +41,12 @@ public final class Harmonizer {
             final List<NoteEvent> melody,
             final Key key,
             final ChordProgression progression,
-            final int voicingOctave) {
+            final int voicingOctave,
+            final TimeSignature ts) {
 
         final List<ChordSymbol> chords = progression.inKey(key);
         final List<NoteEvent> result = new ArrayList<>();
-
-        // Compute total melody duration to know how many measures
-        final Fraction melodyDuration = melody.stream()
-            .map(e -> e.duration().fraction())
-            .reduce(Fraction.ZERO, Fraction::add);
-
-        // Each chord lasts one measure — use whole note as proxy for measure duration
-        // A more complete implementation would use the time signature
-        final Duration chordDuration = RhythmicValue.WHOLE;
+        final Duration chordDuration = fractionToDuration(ts.measureDuration());
 
         for (final ChordSymbol chord : chords) {
             final SpelledPitch rootPitch = SpelledPitch.of(chord.root(), chord.rootAccidental(), voicingOctave);
@@ -283,6 +276,43 @@ public final class Harmonizer {
                 Chord.of(tones, q,  Velocity.MF));
             default -> throw new IllegalArgumentException(unknownStyleMsg(style));
         };
+    }
+
+    /**
+     * Maps a measure-duration fraction to a concrete Duration.
+     * Handles whole, half, dotted-half (3/4, 6/8), and common compound meters.
+     * Falls back to the nearest standard RhythmicValue for unrecognised fractions.
+     */
+    static Duration fractionToDuration(final Fraction f) {
+        for (final RhythmicValue rv : RhythmicValue.values()) {
+            if (rv.fraction().equals(f)) {
+                return rv;
+            }
+        }
+        // Check dotted values (duration = rv * 3/2)
+        for (final RhythmicValue rv : RhythmicValue.values()) {
+            if (rv.fraction().multiply(Fraction.of(3, 2)).equals(f)) {
+                return new DottedValue(rv, 1);
+            }
+        }
+        // Double-dotted (duration = rv * 7/4)
+        for (final RhythmicValue rv : RhythmicValue.values()) {
+            if (rv.fraction().multiply(Fraction.of(7, 4)).equals(f)) {
+                return new DottedValue(rv, 2);
+            }
+        }
+        // Fallback: nearest RhythmicValue
+        RhythmicValue best = RhythmicValue.WHOLE;
+        final double target = f.toDouble();
+        double bestDist = Math.abs(best.fraction().toDouble() - target);
+        for (final RhythmicValue rv : RhythmicValue.values()) {
+            final double dist = Math.abs(rv.fraction().toDouble() - target);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = rv;
+            }
+        }
+        return best;
     }
 
     private static String unknownStyleMsg(final String style) {

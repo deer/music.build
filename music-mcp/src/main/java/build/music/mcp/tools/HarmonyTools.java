@@ -68,7 +68,7 @@ public final class HarmonyTools {
             }
             final List<NoteEvent> melody = ctx.getVoice(voiceName);
             final List<NoteEvent> harmony = Harmonizer.harmonize(
-                melody, ctx.getKey(), ctx.getProgression(), voicingOctave);
+                melody, ctx.getKey(), ctx.getProgression(), voicingOctave, ctx.getTimeSignature());
             final String target = targetVoice != null ? targetVoice : voiceName + "_harmony";
             ctx.createVoice(target, harmony);
             return ToolResult.success("Created harmony voice '" + target + "' with " +

@@ -450,6 +450,14 @@ public final class CompositionContext {
     public void setBarChords(final Map<Integer, ChordSymbol> chords) {
         barChords.clear();
         barChords.putAll(chords);
+        // If a section was created before harmony.set_bars was called (i.e. it captured an
+        // empty bar-chord map), retroactively populate it now so the order doesn't matter.
+        if (formBuilder != null) {
+            final String lastSection = formBuilder.lastSectionName();
+            if (lastSection != null && formBuilder.getSectionBarChords(lastSection).isEmpty()) {
+                formBuilder.setSectionBarChords(lastSection, Collections.unmodifiableMap(barChords));
+            }
+        }
     }
 
     public Map<Integer, ChordSymbol> getBarChords() {
