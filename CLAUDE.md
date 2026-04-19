@@ -4,9 +4,9 @@
 
 music.build is a Java 25, JPMS-modular library and MCP server that treats musical composition as typed, immutable, AI-accessible data. It exposes MCP tools allowing AI agents to compose music by building typed structures (notes, voices, harmony, form) and exporting to MIDI and LilyPond notation.
 
-Music value types are `class extends AbstractTraitable` from `codemodel-foundation`. Construction uses `Foo.of(...)` static factories that read a `MusicCodeModel` from `ScopedValue<MusicCodeModel>` (Java 25 preview). Scalars (`Fraction`, `Velocity`, `Tempo`, …) stay as records; enums implement `Trait` directly. Composition state serializes through `codemodel-foundation` marshalling.
+Music value types are `class extends AbstractTraitable` from `codemodel-foundation`. Construction uses `Foo.of(...)` static factories that read a `MusicCodeModel` from `ScopedValue<MusicCodeModel>`. Scalars (`Fraction`, `Velocity`, `Tempo`, …) stay as records; enums implement `Trait` directly. Composition state serializes through `codemodel-foundation` marshalling.
 
-**Stack**: Java 25 (preview features enabled for `ScopedValue`), JPMS modules, Maven multi-module, JUnit Jupiter 5.11.3, javax.sound.midi, LilyPond CLI (optional). Sibling project deps: `codemodel.build/codemodel-foundation` (load-bearing post-conversion), `base.build` (marshalling, mereology, query, flow), `serve.build` (MCP transport, htmx console).
+**Stack**: Java 25, JPMS modules, Maven multi-module, JUnit 6.0.3, javax.sound.midi, LilyPond CLI (optional). Sibling project deps: `codemodel.build/codemodel-foundation` (load-bearing post-conversion), `base.build` (marshalling, mereology, query, flow), `serve.build` (MCP transport, htmx console).
 **Structure**: 14 modules from `music-pitch`/`music-time` (foundation) up through `music-mcp` (tool surface) and `music-server` (HTTP adapter). See [docs/CODEBASE_MAP.md](docs/CODEBASE_MAP.md) for full architecture.
 
 ## Build
