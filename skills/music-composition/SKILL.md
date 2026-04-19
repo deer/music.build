@@ -5,7 +5,7 @@ description: "Use when composing music with the music-server MCP tools. Covers n
 
 # Music Composition with music-server
 
-You have 52 MCP tools for building compositions from scratch. This skill covers the syntax, tool flow, and patterns.
+You have 47 MCP tools for building compositions from scratch. This skill covers the syntax, tool flow, and patterns.
 
 ## Note Sequence Syntax
 

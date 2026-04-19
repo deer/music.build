@@ -91,3 +91,8 @@ it first.
 music.build is designed for local, single-user use. All composition state lives
 in one in-process session — concurrent requests share the same state. Do not run
 it as a hosted or multi-user service.
+
+## Next steps
+
+- [Quickstart](/docs/quickstart) — compose your first piece
+- [Tools](/docs/tools) — full reference for all 47 MCP tools

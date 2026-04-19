@@ -5,7 +5,7 @@
     "jsr:@deno/esbuild-plugin@^1.2.0": "1.2.1",
     "jsr:@deno/loader@~0.3.10": "0.3.14",
     "jsr:@deno/loader@~0.3.2": "0.3.14",
-    "jsr:@denote/core@0.1": "0.1.0",
+    "jsr:@denote/core@0.2": "0.2.0",
     "jsr:@fresh/build-id@1": "1.0.1",
     "jsr:@fresh/core@2": "2.2.2",
     "jsr:@fresh/core@^2.2.0": "2.2.2",
@@ -112,8 +112,8 @@
     "@deno/loader@0.3.14": {
       "integrity": "97bc63a6cc2d27a60bcdc953f588c5213331d866d44212eebb24cebfb9b011ca"
     },
-    "@denote/core@0.1.0": {
-      "integrity": "1100da83ba92a1eda1e796dc77b472ea79c00e2ad61c6a3026e438ccddb60cfa",
+    "@denote/core@0.2.0": {
+      "integrity": "f752732d6599ec80bf2767c4435052dfac0ec0ffee2addb79633787abf47390e",
       "dependencies": [
         "jsr:@deer/gfm",
         "jsr:@fresh/core@^2.2.2",
@@ -2843,7 +2843,7 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@denote/core@0.1",
+      "jsr:@denote/core@0.2",
       "jsr:@fresh/core@^2.2.2",
       "jsr:@fresh/plugin-vite@^1.0.8",
       "npm:@preact/signals@^2.5.0",

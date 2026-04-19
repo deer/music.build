@@ -12,7 +12,7 @@ total_tokens: 84148
 
 music.build is a Java 25, JPMS-modular library that treats musical composition as typed, immutable, AI-accessible data. The thesis: music is hierarchical composition of typed parts (note → motif → phrase → section → piece) and should be programmable, queryable, and structurally editable — not just playable.
 
-The system exposes 52 MCP tools through a JSON-over-HTTP server, allowing AI agents to compose music by building typed structures via the tool surface.
+The system exposes 47 MCP tools through a JSON-over-HTTP server, allowing AI agents to compose music by building typed structures via the tool surface.
 
 All major domain objects extend `AbstractTraitable` from `build.codemodel.foundation`. Each object is a bag of `Trait` instances; factories call `MusicCodeModel.current()` via a `ScopedValue` to resolve the ambient type registry.
 
@@ -113,8 +113,6 @@ music.build/
 | IntervalDirection.java | ASCENDING / DESCENDING; stored in SpelledInterval but ignored in equals |
 | OctaveTrait.java | @Singular record carrying octave number as a separate queryable trait |
 | typesystem/MusicCodeModel.java | ScopedValue<MusicCodeModel> CURRENT; binds ambient type registry per session |
-
-**Exports**: `build.music.pitch`, `build.music.pitch.typesystem`
 
 **Exports**: `build.music.pitch`, `build.music.pitch.typesystem`
 
@@ -402,7 +400,7 @@ music.build/
 **Key files**:
 | File | Purpose |
 |------|---------|
-| MusicMcpServer.java | configure() registers all 55 tools; JSON arg extraction helpers; two event subscribers |
+| MusicMcpServer.java | configure() registers all 47 tools; JSON arg extraction helpers; two event subscribers |
 
 **Build & run**: `./mvnw exec:java -pl music-server` — starts server on port 3000 (hardcoded).
 
