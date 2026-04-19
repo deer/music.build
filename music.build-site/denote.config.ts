@@ -90,6 +90,11 @@ export const config: DenoteConfig = {
   },
   footer: {
     copyright: "© 2026 music.build · Apache 2.0",
+    links: [
+      { title: "GitHub", href: "https://github.com/deer/music.build" },
+      { title: "Privacy", href: "/privacy" },
+      { title: "Impressum", href: "/impressum" },
+    ],
   },
   seo: {
     url: "https://music.build",
