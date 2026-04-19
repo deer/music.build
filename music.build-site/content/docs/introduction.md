@@ -1,7 +1,7 @@
 ---
 title: Introduction
 description: "music.build is an MCP server that lets AI agents compose music as typed, immutable data."
-ai-summary: "Overview of music.build: what it is, how it works, and the core concepts of typed music composition. Covers the note-to-score data model, the 55-tool MCP surface, and the two export targets (MIDI and LilyPond PDF). Read this before the quickstart."
+ai-summary: "Overview of music.build: what it is, how it works, and the core concepts of typed music composition. Covers the note-to-score data model, the 47-tool MCP surface, and the two export targets (MIDI and LilyPond PDF). Read this before the quickstart."
 ai-keywords: [
   music.build,
   MCP,
@@ -43,7 +43,7 @@ point in the session.
 
 ## How it works
 
-The server exposes **55 MCP tools** across seven areas:
+The server exposes **47 MCP tools** across seven areas:
 
 | Area       | What it does                                                             |
 | ---------- | ------------------------------------------------------------------------ |
@@ -92,3 +92,9 @@ can:
 - Assemble multi-section AABA or verse-chorus forms with volta endings
 - Check voice leading and instrument range rules before export
 - Export to MIDI and, if LilyPond is installed, engraved PDF sheet music
+
+## Next steps
+
+- [Quickstart](/docs/quickstart) — compose a piece in five minutes
+- [Installation](/docs/installation) — Java 25 setup and Claude Desktop config
+- [Tools](/docs/tools) — full reference for all 47 MCP tools

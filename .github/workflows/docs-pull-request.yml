@@ -1,0 +1,26 @@
+name: Docs Pull Request
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'music.build-site/**'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+
+      - name: Check
+        working-directory: music.build-site
+        run: deno task ok
+
+      - name: Build
+        working-directory: music.build-site
+        run: deno task build

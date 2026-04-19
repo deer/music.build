@@ -82,3 +82,9 @@ PORT=4000 ./mvnw exec:java -pl music-server
 ```
 
 Update the `url` in your Claude Desktop config to match.
+
+## Next steps
+
+- [Installation](/docs/installation) — full prerequisites and build instructions
+- [Note Syntax](/docs/note-syntax) — the DSL agents use to write notes
+- [Tools](/docs/tools) — complete reference for all 47 MCP tools

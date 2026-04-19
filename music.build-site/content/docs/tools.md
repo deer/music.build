@@ -1,7 +1,7 @@
 ---
 title: Tools
-description: All 55 MCP tools organized by category, with descriptions and usage notes.
-ai-summary: "Complete reference for all 55 music.build MCP tools, organized by category: voices, voice operations, score configuration, transforms, motifs, harmony, drums, query, form, rules, instruments, and export. Each entry describes what the tool does and when to use it. Cross-references note-syntax for the note DSL."
+description: All 47 MCP tools organized by category, with descriptions and usage notes.
+ai-summary: "Complete reference for all 47 music.build MCP tools, organized by category: voices, voice operations, score configuration, transforms, motifs, harmony, drums, query, form, rules, instruments, and export. Each entry describes what the tool does and when to use it. Cross-references note-syntax for the note DSL."
 ai-keywords: [
   MCP tools,
   voice,
@@ -19,7 +19,7 @@ ai-keywords: [
 
 # Tools
 
-music.build exposes 55 MCP tools. They are all stateless functions over
+music.build exposes 47 MCP tools. They are all stateless functions over
 `CompositionContext` — the session state that accumulates between calls.
 
 ## Voices

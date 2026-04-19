@@ -3,9 +3,10 @@ import type { DenoteConfig } from "@denote/core";
 export const config: DenoteConfig = {
   name: "music.build",
   logo: {
-    text: "music", // Lowercase in header
-    suffix: ".build", // Rendered in primary color
+    text: "music",
+    suffix: ".build",
   },
+  favicon: "/favicon.svg",
   colors: {
     primary: "#b45309",
     background: "#faf7f2",
@@ -90,6 +91,18 @@ export const config: DenoteConfig = {
   footer: {
     copyright: "© 2026 music.build · Apache 2.0",
   },
+  seo: {
+    url: "https://music.build",
+    description:
+      "MCP server for AI music composition — typed notes, MIDI, and LilyPond output.",
+    locale: "en",
+    jsonLdType: "WebSite",
+    jsonLdExtra: {
+      author: { "@type": "Person", name: "Reed von Redwitz" },
+    },
+  },
+  editUrl:
+    "https://github.com/deer/music.build/edit/main/music.build-site/content/docs",
   search: {
     enabled: true,
   },

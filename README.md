@@ -1,5 +1,9 @@
 # music.build
 
+[![CI](https://github.com/deer/music.build/actions/workflows/main-pull-request.yml/badge.svg)](https://github.com/deer/music.build/actions/workflows/main-pull-request.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/build.music/music-mcp)](https://central.sonatype.com/artifact/build.music/music-mcp)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 An MCP server that lets AI agents compose music. Built on a typed, immutable music theory library — notes, voices, harmony, form, and transforms are first-class values that agents build up incrementally and export to MIDI and LilyPond notation.
 
 Apache 2.0 · Java 25 · JPMS · Maven
@@ -58,22 +62,22 @@ Restart Claude Desktop. The server must be running before Claude connects — st
 
 ## Module stack
 
-| Module | What it provides |
-|---|---|
-| `music-pitch` | Pitches, intervals, enharmonics, tuning |
-| `music-time` | Durations, time signatures, tempo, metric positions |
-| `music-core` | Notes, rests, chords, chord symbols, velocity, articulation |
-| `music-transform` | Transpose, invert, retrograde, augment |
-| `music-score` | Voice, Part, Score — the central exchange types |
-| `music-voice` | Voice operations: slice, concat, pad, merge |
+| Module | What it provides                                             |
+|---|--------------------------------------------------------------|
+| `music-pitch` | Pitches, intervals, enharmonics, tuning                      |
+| `music-time` | Durations, time signatures, tempo, metric positions          |
+| `music-core` | Notes, rests, chords, chord symbols, velocity, articulation  |
+| `music-transform` | Transpose, invert, retrograde, augment                       |
+| `music-score` | Voice, Part, Score — the central exchange types              |
+| `music-voice` | Voice operations: slice, concat, pad, merge                  |
 | `music-harmony` | Keys, scales, Roman numerals, chord progressions, harmonizer |
-| `music-instrument` | Instrument catalog with ranges and GM program numbers |
-| `music-rules` | Voice leading, range, meter, parallel motion checks |
-| `music-form` | Sections, formal plans, volta endings |
-| `music-midi` | MIDI render and read, General MIDI constants |
-| `music-lilypond` | LilyPond source generation and PDF engraving |
-| `music-mcp` | 52 MCP tools, composition context, save/load |
-| `music-server` | HTTP adapter, MCP dispatch, session event log |
+| `music-instrument` | Instrument catalog with ranges and GM program numbers        |
+| `music-rules` | Voice leading, range, meter, parallel motion checks          |
+| `music-form` | Sections, formal plans, volta endings                        |
+| `music-midi` | MIDI render and read, General MIDI constants                 |
+| `music-lilypond` | LilyPond source generation and PDF engraving                 |
+| `music-mcp` | 47 MCP tools, composition context, save/load                 |
+| `music-server` | HTTP adapter, MCP dispatch, session event log                |
 
 ## Build and test
 
