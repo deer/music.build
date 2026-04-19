@@ -114,4 +114,7 @@ export const config: DenoteConfig = {
   ai: {
     mcp: true,
   },
+  analytics: {
+    provider: "umami",
+  },
 };
