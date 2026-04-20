@@ -19,6 +19,7 @@ import build.music.time.Tempo;
 import build.music.time.TempoChange;
 import build.music.time.TimeSignature;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,8 +67,12 @@ public final class LilyPondRenderer {
             svByName.put(sv.name(), sv);
         }
 
+        final List<Part> orderedParts = score.scoreParts().stream()
+            .sorted(Comparator.comparingInt(p -> "treble".equals(chooseClef(p.voice().events())) ? 0 : 1))
+            .toList();
+
         boolean firstPart = true;
-        for (final Part part : score.scoreParts()) {
+        for (final Part part : orderedParts) {
             final String clef = chooseClef(part.voice().events());
             sb.append("    \\new Staff \\with { instrumentName = \"")
                 .append(escapeLy(part.name())).append("\" } {\n");

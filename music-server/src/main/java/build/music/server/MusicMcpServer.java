@@ -786,7 +786,7 @@ public final class MusicMcpServer extends ServerApplication.Implementation {
                 "'on_beat' — block chord on every beat; " +
                 "'eighth_pump' — block chord on every eighth note (funk/rock); " +
                 "'shell_voicings' — root + 7th on beats 2 and 4 (sparse jazz voicing); " +
-                "'charleston' — dotted quarter + eighth + quarter (classic jazz Charleston rhythm). " +
+                "'charleston' — dotted quarter + eighth + quarter + rest (classic jazz Charleston rhythm). " +
                 "Requires harmony.set_bars (preferred) or harmony.set_key + harmony.chord_progression. " +
                 "Example: set_bars → comp style='charleston' octave=3 → assign to piano.",
             buildObjectSchema(

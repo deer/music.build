@@ -21,11 +21,7 @@ Always use `./mvnw` (never bare `mvn`).
 
 ## Key Files
 
-- `docs/ROADMAP.md` — **current execution plan — start here for "what's next"**
 - `skills/music-composition/SKILL.md` — primary AI agent reference: note DSL, all 47 tools, patterns
-- `docs/NOTES.md` — known limitations (live only; fixed items pruned)
-- `docs/master-plan.md` — original project thesis and strategic vision (historical; execution plan has diverged, see ROADMAP.md)
-- `docs/prompts/` — historical Claude Code prompts that bootstrapped each milestone (do not edit)
 - `music-mcp/src/main/java/build/music/mcp/CompositionContext.java` — single mutable session state
 - `music-server/src/main/java/build/music/server/MusicMcpServer.java` — all 47 tool registrations
 
