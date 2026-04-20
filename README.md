@@ -44,6 +44,10 @@ The MCP server listens on `http://localhost:3000/mcp`. To use a different port:
 PORT=4000 ./mvnw exec:java -pl music-server
 ```
 
+**Connect to Claude Code**
+
+If you're using [Claude Code](https://claude.ai/code), the project includes an `.mcp.json` that registers the server automatically. Start the server, open Claude Code in this directory, and approve the one-time trust prompt — after that the `music-server` tools are available in every session.
+
 **Connect to Claude Desktop**
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows), adjusting the port if you changed it:

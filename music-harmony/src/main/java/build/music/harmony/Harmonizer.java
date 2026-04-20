@@ -173,7 +173,7 @@ public final class Harmonizer {
      *   "on_beat"         — block chord on every beat
      *   "eighth_pump"     — block chord on every eighth note
      *   "shell_voicings"  — root + 7th (shell) on off-beats
-     *   "charleston"      — dotted quarter + eighth + quarter (4/4 only; warning in other meters)
+     *   "charleston"      — dotted quarter + eighth + quarter + rest (4/4 only; warning in other meters)
      *
      * @param chords    resolved chord symbols, one per bar
      * @param octave    voicing octave (e.g. 3 for mid-range Rhodes comping)
@@ -273,7 +273,8 @@ public final class Harmonizer {
             case "charleston"     -> List.of(
                 Chord.of(tones, dq, Velocity.MF),
                 Chord.of(tones, e,  Velocity.MF),
-                Chord.of(tones, q,  Velocity.MF));
+                Chord.of(tones, q,  Velocity.MF),
+                Rest.of(q));
             default -> throw new IllegalArgumentException(unknownStyleMsg(style));
         };
     }
