@@ -59,6 +59,7 @@
         <serve.version>0.2.3</serve.version>
 
         <!-- Plugin Versions -->
+        <build-helper-plugin.version>3.6.0</build-helper-plugin.version>
         <checkstyle.version>13.4.0</checkstyle.version>
         <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
         <maven-central-publishing-plugin.version>0.10.0</maven-central-publishing-plugin.version>
