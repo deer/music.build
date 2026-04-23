@@ -19,7 +19,9 @@ public final class Transpose implements PitchTransform {
         this.ascending = ascending;
     }
 
-    /** Transpose upward by the given interval. */
+    /**
+     * Transpose upward by the given interval.
+     */
     public Transpose(final SpelledInterval interval) {
         this(interval, true);
     }
@@ -38,7 +40,9 @@ public final class Transpose implements PitchTransform {
         }
     }
 
-    /** Returns a Transpose that undoes this one. */
+    /**
+     * Returns a Transpose that undoes this one.
+     */
     public Transpose inverse() {
         return new Transpose(interval, !ascending);
     }
@@ -62,7 +66,8 @@ public final class Transpose implements PitchTransform {
             if (accOffset >= -2 && accOffset <= 2) {
                 try {
                     return SpelledPitch.of(newName, Accidental.fromOffset(accOffset), oct);
-                } catch (final IllegalArgumentException ignored) {}
+                } catch (final IllegalArgumentException ignored) {
+                }
             }
         }
         throw new IllegalArgumentException(

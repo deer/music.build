@@ -9,7 +9,9 @@ import build.codemodel.foundation.descriptor.Trait;
 
 import java.lang.invoke.MethodHandles;
 
-/** Number of measures in a {@link Section} as a singular trait. */
+/**
+ * Number of measures in a {@link Section} as a singular trait.
+ */
 @Singular
 public record MeasureCountTrait(int count) implements Trait {
 

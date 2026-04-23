@@ -12,9 +12,12 @@ import java.util.stream.Collectors;
  */
 public final class InstrumentTools {
 
-    private InstrumentTools() {}
+    private InstrumentTools() {
+    }
 
-    /** Tool: instrument.info — get information about a named instrument. */
+    /**
+     * Tool: instrument.info — get information about a named instrument.
+     */
     public static ToolResult info(final String instrumentName) {
         final Optional<Instrument> opt = findInstrument(instrumentName);
         if (opt.isEmpty()) {
@@ -24,14 +27,14 @@ public final class InstrumentTools {
         final Instrument i = opt.get();
         return ToolResult.success(
             "Instrument: " + i.name() + "\n" +
-            "Family: " + i.family() + "\n" +
-            "Written range: " + i.writtenRange() + " (MIDI " +
+                "Family: " + i.family() + "\n" +
+                "Written range: " + i.writtenRange() + " (MIDI " +
                 i.writtenRange().low().midi() + "-" + i.writtenRange().high().midi() + ")\n" +
-            "Comfortable range: " + i.comfortableRange() + "\n" +
-            "MIDI program: " + i.midiProgram() + "\n" +
-            "Transposing: " + (i.transposing() ? "yes" : "no") + "\n" +
-            "Suggested clef: " + i.clef() + "\n" +
-            "Articulations: " + i.availableArticulations().stream()
+                "Comfortable range: " + i.comfortableRange() + "\n" +
+                "MIDI program: " + i.midiProgram() + "\n" +
+                "Transposing: " + (i.transposing() ? "yes" : "no") + "\n" +
+                "Suggested clef: " + i.clef() + "\n" +
+                "Articulations: " + i.availableArticulations().stream()
                 .map(Enum::name).collect(Collectors.joining(", "))
         );
     }

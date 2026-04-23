@@ -29,23 +29,29 @@ import javax.sound.midi.Track;
 
 /**
  * Reads a Standard MIDI File back into Voice objects.
- *
+ * <p>
  * Limitations:
  * - Enharmonic spelling is lost; black keys are spelled with sharps (C#, not Db)
  * - Complex MIDI features (pitch bend, aftertouch, SysEx) are ignored
  */
 public final class MidiReader {
 
-    private MidiReader() {}
+    private MidiReader() {
+    }
 
-    public record MidiImport(List<Voice> voices, Tempo tempo) {}
+    public record MidiImport(List<Voice> voices, Tempo tempo) {
+    }
 
-    /** Read a MIDI file; extract note events per track. Conductor tracks are skipped. */
+    /**
+     * Read a MIDI file; extract note events per track. Conductor tracks are skipped.
+     */
     public static List<Voice> read(final Path path) throws IOException, InvalidMidiDataException {
         return readWithTempo(path).voices();
     }
 
-    /** Read a MIDI file; extract note events and tempo. */
+    /**
+     * Read a MIDI file; extract note events and tempo.
+     */
     public static MidiImport readWithTempo(final Path path) throws IOException, InvalidMidiDataException {
         final Sequence sequence = MidiSystem.getSequence(path.toFile());
         final int resolution = sequence.getResolution(); // ticks per quarter note
@@ -147,7 +153,9 @@ public final class MidiReader {
         return Collections.unmodifiableList(events);
     }
 
-    /** Convert ticks to a Fraction of a whole note. Snaps to common rhythmic values. */
+    /**
+     * Convert ticks to a Fraction of a whole note. Snaps to common rhythmic values.
+     */
     private static Fraction ticksToFraction(final long ticks, final int resolution) {
         // resolution = ticks per quarter note; quarter = 1/4 of whole note
         // fraction = ticks / (resolution * 4)
@@ -192,16 +200,16 @@ public final class MidiReader {
         final int semitone = midiNote % 12;
         // Prefer sharps for black keys
         return switch (semitone) {
-            case 0  -> SpelledPitch.of(NoteName.C, Accidental.NATURAL, octave);
-            case 1  -> SpelledPitch.of(NoteName.C, Accidental.SHARP, octave);
-            case 2  -> SpelledPitch.of(NoteName.D, Accidental.NATURAL, octave);
-            case 3  -> SpelledPitch.of(NoteName.D, Accidental.SHARP, octave);
-            case 4  -> SpelledPitch.of(NoteName.E, Accidental.NATURAL, octave);
-            case 5  -> SpelledPitch.of(NoteName.F, Accidental.NATURAL, octave);
-            case 6  -> SpelledPitch.of(NoteName.F, Accidental.SHARP, octave);
-            case 7  -> SpelledPitch.of(NoteName.G, Accidental.NATURAL, octave);
-            case 8  -> SpelledPitch.of(NoteName.G, Accidental.SHARP, octave);
-            case 9  -> SpelledPitch.of(NoteName.A, Accidental.NATURAL, octave);
+            case 0 -> SpelledPitch.of(NoteName.C, Accidental.NATURAL, octave);
+            case 1 -> SpelledPitch.of(NoteName.C, Accidental.SHARP, octave);
+            case 2 -> SpelledPitch.of(NoteName.D, Accidental.NATURAL, octave);
+            case 3 -> SpelledPitch.of(NoteName.D, Accidental.SHARP, octave);
+            case 4 -> SpelledPitch.of(NoteName.E, Accidental.NATURAL, octave);
+            case 5 -> SpelledPitch.of(NoteName.F, Accidental.NATURAL, octave);
+            case 6 -> SpelledPitch.of(NoteName.F, Accidental.SHARP, octave);
+            case 7 -> SpelledPitch.of(NoteName.G, Accidental.NATURAL, octave);
+            case 8 -> SpelledPitch.of(NoteName.G, Accidental.SHARP, octave);
+            case 9 -> SpelledPitch.of(NoteName.A, Accidental.NATURAL, octave);
             case 10 -> SpelledPitch.of(NoteName.A, Accidental.SHARP, octave);
             case 11 -> SpelledPitch.of(NoteName.B, Accidental.NATURAL, octave);
             default -> throw new IllegalArgumentException("Unexpected semitone: " + semitone);

@@ -10,7 +10,9 @@ import build.codemodel.foundation.descriptor.Trait;
 import java.lang.invoke.MethodHandles;
 import java.util.Objects;
 
-/** Display name of an {@link Instrument} as a singular trait. */
+/**
+ * Display name of an {@link Instrument} as a singular trait.
+ */
 @Singular
 public record InstrumentNameTrait(String name) implements Trait {
 

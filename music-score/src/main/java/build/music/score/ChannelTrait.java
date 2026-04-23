@@ -9,7 +9,9 @@ import build.codemodel.foundation.descriptor.Trait;
 
 import java.lang.invoke.MethodHandles;
 
-/** MIDI channel assignment as a singular trait for {@link Voice} or {@link Part}. */
+/**
+ * MIDI channel assignment as a singular trait for {@link Voice} or {@link Part}.
+ */
 @Singular
 public record ChannelTrait(int channel) implements Trait {
 

@@ -52,12 +52,12 @@ public record Fraction(int numerator, int denominator) implements Comparable<Fra
 
     public Fraction add(final Fraction other) {
         return new Fraction(numerator * other.denominator + other.numerator * denominator,
-                            denominator * other.denominator);
+            denominator * other.denominator);
     }
 
     public Fraction subtract(final Fraction other) {
         return new Fraction(numerator * other.denominator - other.numerator * denominator,
-                            denominator * other.denominator);
+            denominator * other.denominator);
     }
 
     public Fraction multiply(final Fraction other) {

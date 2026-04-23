@@ -6,10 +6,13 @@ import java.nio.file.Path;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Sequence;
 
-/** Writes a MIDI Sequence to a Standard MIDI File. */
+/**
+ * Writes a MIDI Sequence to a Standard MIDI File.
+ */
 public final class MidiWriter {
 
-    private MidiWriter() {}
+    private MidiWriter() {
+    }
 
     /**
      * Write a Sequence to a Standard MIDI File (type 1 — multi-track).

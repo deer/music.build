@@ -7,7 +7,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ScaleTests {
 
@@ -59,11 +61,11 @@ class ScaleTests {
         List<SpelledPitch> pitches = scale.pitches(4);
         assertEquals("Ab4", pitches.get(0).toString());
         assertEquals("Bb4", pitches.get(1).toString());
-        assertEquals("C5",  pitches.get(2).toString());
+        assertEquals("C5", pitches.get(2).toString());
         assertEquals("Db5", pitches.get(3).toString());
         assertEquals("Eb5", pitches.get(4).toString());
-        assertEquals("F5",  pitches.get(5).toString());
-        assertEquals("G5",  pitches.get(6).toString());
+        assertEquals("F5", pitches.get(5).toString());
+        assertEquals("G5", pitches.get(6).toString());
     }
 
     @Test

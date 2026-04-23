@@ -15,7 +15,9 @@ public record MetricPosition(int measure, Fraction beatOffset) implements Compar
         return beatOffset.equals(Fraction.ZERO);
     }
 
-    /** Which beat (1-based) this position falls on within the given time signature. */
+    /**
+     * Which beat (1-based) this position falls on within the given time signature.
+     */
     public int beat(final TimeSignature ts) {
         final Fraction beatUnitFraction = Fraction.of(1, ts.beatUnit());
         // beatOffset is in whole-note fractions; divide by beat-unit fraction to get beat index

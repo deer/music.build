@@ -13,7 +13,7 @@ import java.util.Objects;
 
 /**
  * Fluent builder for constructing formal plans.
- *
+ * <p>
  * Usage:
  * <pre>
  * FormalPlan plan = FormBuilder.create("My Piece")
@@ -95,7 +95,7 @@ public final class FormBuilder {
         if (original == null) {
             throw new IllegalArgumentException(
                 "Section '" + existingSectionName + "' not found. " +
-                "Available sections: " + namedSections.keySet());
+                    "Available sections: " + namedSections.keySet());
         }
         // Create a copy with the new label, preserving endings
         final Section copy = Section.of(original.name(), newLabel, original.voices(),
@@ -107,9 +107,9 @@ public final class FormBuilder {
     /**
      * Register an ending for a specific pass of a section.
      *
-     * @param sectionName     the section to attach the ending to
-     * @param pass            which pass this ending applies to (1-based)
-     * @param endingSectionName  name of a previously defined section whose bars replace the tail
+     * @param sectionName       the section to attach the ending to
+     * @param pass              which pass this ending applies to (1-based)
+     * @param endingSectionName name of a previously defined section whose bars replace the tail
      */
     public FormBuilder setEnding(final String sectionName, final int pass, final String endingSectionName) {
         Objects.requireNonNull(sectionName, "sectionName must not be null");
@@ -151,12 +151,16 @@ public final class FormBuilder {
         return this;
     }
 
-    /** Return the bar-chord snapshot for the given section, or an empty map if none was recorded. */
+    /**
+     * Return the bar-chord snapshot for the given section, or an empty map if none was recorded.
+     */
     public Map<Integer, ChordSymbol> getSectionBarChords(final String sectionName) {
         return sectionBarChords.getOrDefault(sectionName, Map.of());
     }
 
-    /** Return the name of the most recently added named section, or null if no sections exist. */
+    /**
+     * Return the name of the most recently added named section, or null if no sections exist.
+     */
     public String lastSectionName() {
         if (namedSections.isEmpty()) {
             return null;

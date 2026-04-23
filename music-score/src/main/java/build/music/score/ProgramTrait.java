@@ -9,7 +9,9 @@ import build.codemodel.foundation.descriptor.Trait;
 
 import java.lang.invoke.MethodHandles;
 
-/** MIDI program (instrument patch) as a singular trait for {@link Voice} or {@link Part}. */
+/**
+ * MIDI program (instrument patch) as a singular trait for {@link Voice} or {@link Part}.
+ */
 @Singular
 public record ProgramTrait(int program) implements Trait {
 

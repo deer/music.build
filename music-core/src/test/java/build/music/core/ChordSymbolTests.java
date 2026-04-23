@@ -4,8 +4,11 @@ import build.music.pitch.Accidental;
 import build.music.pitch.NoteName;
 import build.music.pitch.PitchClass;
 import org.junit.jupiter.api.Test;
+
 import java.util.List;
-import static org.junit.jupiter.api.Assertions.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ChordSymbolTests {
 

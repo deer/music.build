@@ -10,7 +10,9 @@ import build.codemodel.foundation.descriptor.Trait;
 import java.lang.invoke.MethodHandles;
 import java.util.Objects;
 
-/** Title of a {@link FormalPlan} as a singular trait. */
+/**
+ * Title of a {@link FormalPlan} as a singular trait.
+ */
 @Singular
 public record FormTitleTrait(String title) implements Trait {
 

@@ -3,8 +3,6 @@ package build.music.voice;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
 import build.music.core.Rest;
-import build.music.pitch.Accidental;
-import build.music.pitch.NoteName;
 import build.music.pitch.SpelledPitch;
 import build.music.score.Voice;
 import build.music.time.RhythmicValue;
@@ -13,7 +11,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class VoiceOperationsTests {
 

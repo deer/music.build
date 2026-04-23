@@ -12,7 +12,9 @@ import build.codemodel.foundation.descriptor.Trait;
 import java.lang.invoke.MethodHandles;
 import java.util.Objects;
 
-/** The comfortable (idiomatic, easy-to-play) pitch range of an {@link Instrument} as a singular trait. */
+/**
+ * The comfortable (idiomatic, easy-to-play) pitch range of an {@link Instrument} as a singular trait.
+ */
 @Singular
 public record ComfortableRangeTrait(PitchRange range) implements Trait {
 

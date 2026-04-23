@@ -3,11 +3,12 @@ package build.music.mcp.tools;
 import build.music.mcp.CompositionContext;
 import build.music.mcp.ToolResult;
 import build.music.score.Score;
-import build.music.score.StructuredVoice;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for FormTools MCP tool behaviour, focusing on form.set_ending correctness.

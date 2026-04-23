@@ -19,14 +19,15 @@ import java.util.Map;
  */
 public final class FormTools {
 
-    private FormTools() {}
+    private FormTools() {
+    }
 
     /**
      * Tool: form.create_section — create a named section.
      * If voiceNames is null, uses all existing voices.
      */
     public static ToolResult createSection(final CompositionContext ctx, final String sectionName,
-            final String voiceNames, final int measures) {
+                                           final String voiceNames, final int measures) {
         try {
             final TimeSignature ts = ctx.getTimeSignature();
 
@@ -73,7 +74,7 @@ public final class FormTools {
      * Tool: form.repeat_section — repeat a previously defined section.
      */
     public static ToolResult repeatSection(final CompositionContext ctx, final String sectionName,
-            final String newLabel) {
+                                           final String newLabel) {
         try {
             if (!ctx.hasFormBuilder()) {
                 return ToolResult.error("No form started. Use form.create_section first.");
@@ -93,12 +94,12 @@ public final class FormTools {
     /**
      * Tool: form.set_ending — register a per-pass ending for a section.
      *
-     * @param sectionName      name of the section to attach the ending to
-     * @param pass             which pass this ending applies to (1-based)
+     * @param sectionName       name of the section to attach the ending to
+     * @param pass              which pass this ending applies to (1-based)
      * @param endingSectionName name of a previously defined section whose bars replace the tail
      */
     public static ToolResult setEnding(final CompositionContext ctx, final String sectionName,
-            final int pass, final String endingSectionName) {
+                                       final int pass, final String endingSectionName) {
         try {
             if (!ctx.hasFormBuilder()) {
                 return ToolResult.error("No form started. Use form.create_section first.");
@@ -106,7 +107,7 @@ public final class FormTools {
             ctx.getFormBuilder().setEnding(sectionName, pass, endingSectionName);
             return ToolResult.success(
                 "Registered ending for section '" + sectionName + "' pass " + pass +
-                " → section '" + endingSectionName + "'.");
+                    " → section '" + endingSectionName + "'.");
         } catch (final IllegalArgumentException e) {
             return ToolResult.error(e.getMessage());
         }
@@ -165,7 +166,9 @@ public final class FormTools {
         }
     }
 
-    /** Tool: form.describe — show the current formal plan structure. */
+    /**
+     * Tool: form.describe — show the current formal plan structure.
+     */
     public static ToolResult describeForm(final CompositionContext ctx) {
         if (!ctx.hasFormBuilder()) {
             return ToolResult.success("No formal plan defined yet. Use form.create_section to start.");

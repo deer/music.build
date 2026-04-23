@@ -9,10 +9,13 @@ import build.music.pitch.SpelledInterval;
 
 import java.util.List;
 
-/** Static factory and combinator methods for transforms. */
+/**
+ * Static factory and combinator methods for transforms.
+ */
 public final class Transforms {
 
-    private Transforms() {}
+    private Transforms() {
+    }
 
     @SafeVarargs
     public static <T> Transform<T> compose(final Transform<T>... transforms) {
@@ -23,7 +26,9 @@ public final class Transforms {
         return result;
     }
 
-    /** Transpose all pitched events in a sequence. */
+    /**
+     * Transpose all pitched events in a sequence.
+     */
     public static List<NoteEvent> transposePitches(final List<NoteEvent> events, final SpelledInterval interval) {
         return events.stream()
             .map(event -> switch (event) {
@@ -34,7 +39,9 @@ public final class Transforms {
             .toList();
     }
 
-    /** Retrograde inversion: reverse order then invert pitches around axis. */
+    /**
+     * Retrograde inversion: reverse order then invert pitches around axis.
+     */
     public static MelodicTransform retrogradeInversion(final Pitch axis) {
         final Retrograde retrograde = new Retrograde();
         final Invert invert = new Invert(axis);
@@ -42,7 +49,8 @@ public final class Transforms {
             final List<NoteEvent> retro = retrograde.apply(events);
             return retro.stream()
                 .map(event -> switch (event) {
-                    case Note n -> (NoteEvent) Note.of(invert.apply(n.pitch()), n.duration(), n.velocity(), n.articulation(), n.tied());
+                    case Note n ->
+                        (NoteEvent) Note.of(invert.apply(n.pitch()), n.duration(), n.velocity(), n.articulation(), n.tied());
                     case build.music.core.Rest r -> r;
                     case Chord c -> (NoteEvent) Chord.of(
                         c.pitches().stream().map(p -> invert.apply(p)).toList(),

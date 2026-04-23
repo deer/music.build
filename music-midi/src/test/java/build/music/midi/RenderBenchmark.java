@@ -9,34 +9,36 @@ import build.music.score.Voice;
 import build.music.time.RhythmicValue;
 import org.junit.jupiter.api.Test;
 
-import javax.sound.midi.InvalidMidiDataException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.sound.midi.InvalidMidiDataException;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Pre-conversion canary benchmark for the codemodel reframing (Tier 1, Phase 1).
- *
+ * <p>
  * Measures heap delta and wall time for rendering a 1000-event Voice to MIDI via
  * MidiRenderer.render(score). Run on main before the conversion starts to establish
  * the baseline. Re-run after Phase 6 to verify the delta is acceptable.
- *
+ * <p>
  * Thresholds (from ROADMAP.md Phase 1):
- *   - memory: re-run result must be less than ~5x baseline
- *   - wall time: re-run result must be less than ~3x baseline
- *
+ * - memory: re-run result must be less than ~5x baseline
+ * - wall time: re-run result must be less than ~3x baseline
+ * <p>
  * PRE-CONVERSION BASELINE (recorded 2026-04-13, Java 25, Linux):
- *   wall time : 1 ms   (stable across 5 runs after one throw-away warm-up)
- *   heap delta: 850 KB (totalMemory - freeMemory before/after render call)
- *
+ * wall time : 1 ms   (stable across 5 runs after one throw-away warm-up)
+ * heap delta: 850 KB (totalMemory - freeMemory before/after render call)
+ * <p>
  * POST-CONVERSION NUMBERS (recorded 2026-04-14, after codemodel-reframe Tier 1):
- *   wall time : 2 ms   (2x baseline — well within 3x threshold)
- *   heap delta: 870 KB (1.02x baseline — well within 5x threshold)
+ * wall time : 2 ms   (2x baseline — well within 3x threshold)
+ * heap delta: 870 KB (1.02x baseline — well within 5x threshold)
  */
 class RenderBenchmark {
 
-    /** Pitches to cycle through — covers a two-octave C major scale (14 pitches). */
+    /**
+     * Pitches to cycle through — covers a two-octave C major scale (14 pitches).
+     */
     private static final SpelledPitch[] PITCHES = {
         SpelledPitch.parse("C4"), SpelledPitch.parse("D4"), SpelledPitch.parse("E4"),
         SpelledPitch.parse("F4"), SpelledPitch.parse("G4"), SpelledPitch.parse("A4"),
@@ -45,7 +47,9 @@ class RenderBenchmark {
         SpelledPitch.parse("A5"), SpelledPitch.parse("B5"),
     };
 
-    /** Durations to cycle through — mix of quarters and eighths for realism. */
+    /**
+     * Durations to cycle through — mix of quarters and eighths for realism.
+     */
     private static final RhythmicValue[] DURATIONS = {
         RhythmicValue.QUARTER, RhythmicValue.QUARTER,
         RhythmicValue.EIGHTH, RhythmicValue.EIGHTH,

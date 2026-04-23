@@ -13,51 +13,52 @@ import java.util.Map;
  */
 public final class ScoreTools {
 
-    private ScoreTools() {}
+    private ScoreTools() {
+    }
 
     // General MIDI program numbers by instrument name.
     // "drums" is a sentinel (program 0, but channel 9 is forced — see assignInstrument).
     private static final Map<String, Integer> INSTRUMENTS = Map.ofEntries(
         // Keyboards / tuned percussion
-        Map.entry("piano",              0),
-        Map.entry("bright_piano",       1),
-        Map.entry("honky_tonk",         3),  // Honky-tonk Piano (slightly detuned)
-        Map.entry("electric_piano",     4),  // Electric Piano 1 (Rhodes-like)
-        Map.entry("rhodes",             4),  // Alias for electric_piano
-        Map.entry("harpsichord",        6),
-        Map.entry("vibraphone",        11),
-        Map.entry("marimba",           12),
-        Map.entry("organ",             19),
-        Map.entry("accordion",         21),
+        Map.entry("piano", 0),
+        Map.entry("bright_piano", 1),
+        Map.entry("honky_tonk", 3),  // Honky-tonk Piano (slightly detuned)
+        Map.entry("electric_piano", 4),  // Electric Piano 1 (Rhodes-like)
+        Map.entry("rhodes", 4),  // Alias for electric_piano
+        Map.entry("harpsichord", 6),
+        Map.entry("vibraphone", 11),
+        Map.entry("marimba", 12),
+        Map.entry("organ", 19),
+        Map.entry("accordion", 21),
         // Guitar / bass
-        Map.entry("guitar",            24),
-        Map.entry("electric_guitar",   27),  // Clean electric guitar
-        Map.entry("electric_bass",     33),
-        Map.entry("synth_bass",        38),
+        Map.entry("guitar", 24),
+        Map.entry("electric_guitar", 27),  // Clean electric guitar
+        Map.entry("electric_bass", 33),
+        Map.entry("synth_bass", 38),
         // Strings
-        Map.entry("violin",            40),
-        Map.entry("viola",             41),
-        Map.entry("cello",             42),
-        Map.entry("strings",           48),
-        Map.entry("synth_strings",     50),
+        Map.entry("violin", 40),
+        Map.entry("viola", 41),
+        Map.entry("cello", 42),
+        Map.entry("strings", 48),
+        Map.entry("synth_strings", 50),
         // Choir
-        Map.entry("choir",             52),
+        Map.entry("choir", 52),
         // Brass / winds
-        Map.entry("trumpet",           56),
-        Map.entry("trombone",          57),
-        Map.entry("tuba",              58),
-        Map.entry("french_horn",       60),
-        Map.entry("brass",             61),  // Brass section
-        Map.entry("saxophone",         66),  // Tenor sax
-        Map.entry("oboe",              68),
-        Map.entry("bassoon",           70),
-        Map.entry("clarinet",          71),
-        Map.entry("flute",             73),
+        Map.entry("trumpet", 56),
+        Map.entry("trombone", 57),
+        Map.entry("tuba", 58),
+        Map.entry("french_horn", 60),
+        Map.entry("brass", 61),  // Brass section
+        Map.entry("saxophone", 66),  // Tenor sax
+        Map.entry("oboe", 68),
+        Map.entry("bassoon", 70),
+        Map.entry("clarinet", 71),
+        Map.entry("flute", 73),
         // Synth leads & pads
-        Map.entry("synth_lead",        81),  // Lead 2 sawtooth — classic house/trance lead
-        Map.entry("synth_pad",         89),  // Pad 2 warm — classic house chord pad
+        Map.entry("synth_lead", 81),  // Lead 2 sawtooth — classic house/trance lead
+        Map.entry("synth_pad", 89),  // Pad 2 warm — classic house chord pad
         // Drums (channel 9 is forced regardless of program number)
-        Map.entry("drums",              0)
+        Map.entry("drums", 0)
     );
 
     /**
@@ -65,10 +66,10 @@ public final class ScoreTools {
      * All parameters are optional; only non-null values are updated.
      */
     public static ToolResult setMetadata(
-            final CompositionContext ctx,
-            final String title,
-            final Integer tempo,
-            final String timeSignature) {
+        final CompositionContext ctx,
+        final String title,
+        final Integer tempo,
+        final String timeSignature) {
         try {
             if (title != null && !title.isBlank()) {
                 ctx.setTitle(title);
@@ -96,19 +97,19 @@ public final class ScoreTools {
      * @param instrument instrument name, e.g. "piano", "strings", "flute"
      */
     public static ToolResult assignInstrument(
-            final CompositionContext ctx, final String voiceName, final String instrument) {
+        final CompositionContext ctx, final String voiceName, final String instrument) {
         try {
             if (!ctx.hasVoice(voiceName)) {
                 return ToolResult.error(
                     "Voice '" + voiceName + "' does not exist. Available voices: " +
-                    ctx.voiceNames() + ". Create it first with voice.create.");
+                        ctx.voiceNames() + ". Create it first with voice.create.");
             }
             final String key = instrument.toLowerCase().replace(' ', '_');
             final Integer program = INSTRUMENTS.get(key);
             if (program == null) {
                 return ToolResult.error(
                     "Unknown instrument '" + instrument + "'. Available: " +
-                    String.join(", ", INSTRUMENTS.keySet()) + ".");
+                        String.join(", ", INSTRUMENTS.keySet()) + ".");
             }
             // Drum voices are always on channel 9 (GM percussion channel).
             // All other voices get the next free melodic channel (skipping 9).
@@ -116,7 +117,7 @@ public final class ScoreTools {
             ctx.assignPart(voiceName, channel, program, instrument);
             return ToolResult.success(
                 "Assigned '" + voiceName + "' to " + instrument +
-                " (GM program " + program + ", channel " + channel + ").");
+                    " (GM program " + program + ", channel " + channel + ").");
         } catch (final IllegalArgumentException e) {
             return ToolResult.error(e.getMessage());
         }
@@ -139,13 +140,13 @@ public final class ScoreTools {
             if (ratio.toDouble() <= 0.5 || ratio.toDouble() >= 1.0) {
                 return ToolResult.error(
                     "Swing ratio must be between 0.5 and 1.0 (exclusive). " +
-                    "Typical values: 2/3 (standard jazz), 3/5 (light), 7/10 (medium).");
+                        "Typical values: 2/3 (standard jazz), 3/5 (light), 7/10 (medium).");
             }
             ctx.setSwingRatio(ratio);
             final long delay = Math.round((ratio.toDouble() - 0.5) * 480);
             return ToolResult.success(
                 "Swing set to " + ratio + " (" + delay + " ticks delay on off-beat eighths). " +
-                "Jazz standard: 2/3. Export MIDI to hear the effect.");
+                    "Jazz standard: 2/3. Export MIDI to hear the effect.");
         } catch (final IllegalArgumentException e) {
             return ToolResult.error(e.getMessage());
         }
@@ -155,32 +156,36 @@ public final class ScoreTools {
      * Tool: score.set_tempo_change — declare a gradual tempo change across a bar span.
      * Generates interpolated MIDI tempo events and a rit./accel. notation mark in LilyPond.
      *
-     * @param startBar  first bar of the change
-     * @param endBar    last bar (target tempo reached here)
-     * @param toBpm     target BPM at endBar
-     * @param curve     "linear" (default) or "exponential"
+     * @param startBar first bar of the change
+     * @param endBar   last bar (target tempo reached here)
+     * @param toBpm    target BPM at endBar
+     * @param curve    "linear" (default) or "exponential"
      */
     public static ToolResult setTempoChange(
-            final CompositionContext ctx, final int startBar, final int endBar, final int toBpm, final String curve) {
+        final CompositionContext ctx, final int startBar, final int endBar, final int toBpm, final String curve) {
         try {
             final String resolvedCurve = (curve == null || curve.isBlank()) ? "linear" : curve.toLowerCase();
             ctx.addTempoChange(startBar, endBar, toBpm, resolvedCurve);
             final String direction = toBpm < ctx.getTempo().bpm() ? "ritardando" : "accelerando";
             return ToolResult.success(
                 "Added " + direction + ": bars " + startBar + "–" + endBar +
-                " → " + toBpm + " BPM (" + resolvedCurve + " curve). " +
-                "Will affect both MIDI playback and LilyPond notation.");
+                    " → " + toBpm + " BPM (" + resolvedCurve + " curve). " +
+                    "Will affect both MIDI playback and LilyPond notation.");
         } catch (final IllegalArgumentException e) {
             return ToolResult.error(e.getMessage());
         }
     }
 
-    /** Tool: score.describe — get a full description of the current composition state. */
+    /**
+     * Tool: score.describe — get a full description of the current composition state.
+     */
     public static ToolResult describeScore(final CompositionContext ctx) {
         return ToolResult.success(ctx.describe());
     }
 
-    /** Tool: score.clear — clear the entire composition and start fresh. */
+    /**
+     * Tool: score.clear — clear the entire composition and start fresh.
+     */
     public static ToolResult clearScore(final CompositionContext ctx) {
         ctx.clear();
         return ToolResult.success("Composition cleared. Ready to start fresh.");

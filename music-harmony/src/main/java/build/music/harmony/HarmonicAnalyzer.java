@@ -22,7 +22,8 @@ public final class HarmonicAnalyzer {
         6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17
     };
 
-    private HarmonicAnalyzer() {}
+    private HarmonicAnalyzer() {
+    }
 
     /**
      * Label each chord in the list with its Roman numeral function in the given key.
@@ -101,7 +102,7 @@ public final class HarmonicAnalyzer {
      * Returns the indices where the pattern starts.
      */
     public static List<Integer> findProgression(
-            final List<ChordSymbol> chords, final ChordProgression pattern, final Key key) {
+        final List<ChordSymbol> chords, final ChordProgression pattern, final Key key) {
         final List<ChordSymbol> patternChords = pattern.inKey(key);
         final int patLen = patternChords.size();
         final List<Integer> matches = new ArrayList<>();
@@ -112,7 +113,7 @@ public final class HarmonicAnalyzer {
                 final ChordSymbol a = chords.get(i + j);
                 final ChordSymbol b = patternChords.get(j);
                 if (a.root() != b.root() || a.rootAccidental() != b.rootAccidental()
-                        || a.quality() != b.quality()) {
+                    || a.quality() != b.quality()) {
                     match = false;
                     break;
                 }

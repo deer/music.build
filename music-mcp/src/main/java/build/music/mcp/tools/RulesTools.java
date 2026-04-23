@@ -23,7 +23,8 @@ import java.util.Set;
  */
 public final class RulesTools {
 
-    private RulesTools() {}
+    private RulesTools() {
+    }
 
     /**
      * Tool: rules.check — run all available rules and report violations.
@@ -77,7 +78,7 @@ public final class RulesTools {
      * Tool: rules.check_range — check all voices against their assigned instrument ranges.
      */
     public static ToolResult checkRange(final CompositionContext ctx, final String voiceName,
-            final String instrumentName) {
+                                        final String instrumentName) {
         try {
             Optional<Instrument> instrOpt = Instruments.byName(instrumentName);
             if (instrOpt.isEmpty()) {
@@ -108,23 +109,25 @@ public final class RulesTools {
     }
 
     private static ToolResult formatViolationReport(final List<Violation> violations, final List<String> voices,
-            final String skipNote) {
+                                                    final String skipNote) {
         final long errors = violations.stream().filter(v -> v.severity().equals("error")).count();
         final long warnings = violations.stream().filter(v -> v.severity().equals("warning")).count();
         final long suggestions = violations.stream().filter(v -> v.severity().equals("suggestion")).count();
 
         final StringBuilder sb = new StringBuilder();
         sb.append(violations.size()).append(" violation(s)").append(skipNote).append(": ")
-          .append(errors).append(" error(s), ")
-          .append(warnings).append(" warning(s), ")
-          .append(suggestions).append(" suggestion(s)\n\n");
+            .append(errors).append(" error(s), ")
+            .append(warnings).append(" warning(s), ")
+            .append(suggestions).append(" suggestion(s)\n\n");
         for (final Violation v : violations) {
             sb.append(v).append("\n");
         }
         return ToolResult.success(sb.toString().stripTrailing());
     }
 
-    /** Overload for range-check (no skip note). */
+    /**
+     * Overload for range-check (no skip note).
+     */
     private static ToolResult formatViolationReport(final List<Violation> violations, final List<String> voices) {
         return formatViolationReport(violations, voices, "");
     }

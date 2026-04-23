@@ -5,7 +5,8 @@ import java.util.List;
 
 public final class Enharmonic {
 
-    private Enharmonic() {}
+    private Enharmonic() {
+    }
 
     public static boolean areEnharmonic(final SpelledPitch a, final SpelledPitch b) {
         return a.midi() == b.midi() && !a.equals(b);
@@ -17,19 +18,21 @@ public final class Enharmonic {
         }
         final int target = pitch.midi();
         for (final Accidental acc : List.of(Accidental.NATURAL, Accidental.FLAT, Accidental.SHARP,
-                Accidental.DOUBLE_FLAT, Accidental.DOUBLE_SHARP)) {
+            Accidental.DOUBLE_FLAT, Accidental.DOUBLE_SHARP)) {
             for (final NoteName name : NoteName.values()) {
                 final int raw = (pitch.octave() + 1) * 12 + name.semitonesAboveC() + acc.semitoneOffset();
                 if (raw == target) {
                     try {
                         return SpelledPitch.of(name, acc, pitch.octave());
-                    } catch (final IllegalArgumentException ignored) {}
+                    } catch (final IllegalArgumentException ignored) {
+                    }
                 }
                 final int rawAdj = (pitch.octave()) * 12 + name.semitonesAboveC() + acc.semitoneOffset();
                 if (rawAdj == target) {
                     try {
                         return SpelledPitch.of(name, acc, pitch.octave() - 1);
-                    } catch (final IllegalArgumentException ignored) {}
+                    } catch (final IllegalArgumentException ignored) {
+                    }
                 }
             }
         }
@@ -46,7 +49,8 @@ public final class Enharmonic {
                     if (midi == target && midi >= 0 && midi <= 127) {
                         try {
                             result.add(SpelledPitch.of(name, acc, octave));
-                        } catch (final IllegalArgumentException ignored) {}
+                        } catch (final IllegalArgumentException ignored) {
+                        }
                     }
                 }
             }

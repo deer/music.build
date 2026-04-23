@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Reverses the temporal order of a sequence of NoteEvents. */
+/**
+ * Reverses the temporal order of a sequence of NoteEvents.
+ */
 public record Retrograde() implements MelodicTransform {
 
     @Override
