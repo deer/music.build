@@ -1,5 +1,6 @@
 package build.music.midi;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import javax.sound.midi.MidiSystem;
@@ -18,5 +19,17 @@ public final class MidiWriter {
         if (written < 0) {
             throw new IOException("MidiSystem.write returned " + written + " for " + path);
         }
+    }
+
+    /**
+     * Render a Sequence to MIDI bytes without writing to disk.
+     */
+    public static byte[] toBytes(final Sequence sequence) throws IOException {
+        final var out = new ByteArrayOutputStream();
+        final int written = MidiSystem.write(sequence, 1, out);
+        if (written < 0) {
+            throw new IOException("MidiSystem.write returned " + written);
+        }
+        return out.toByteArray();
     }
 }

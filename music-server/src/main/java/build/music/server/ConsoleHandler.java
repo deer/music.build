@@ -3,6 +3,7 @@ package build.music.server;
 import build.base.template.HtmlOut;
 import build.base.template.Template;
 import build.music.mcp.CompositionContext;
+import build.music.mcp.ExportOptions;
 import build.music.mcp.tools.ExportTools;
 import build.music.mcp.tools.SaveLoadTools;
 import build.music.pitch.typesystem.MusicCodeModel;
@@ -76,7 +77,7 @@ final class ConsoleHandler {
             try {
                 final var result = ScopedValue
                     .where(MusicCodeModel.CURRENT, context.codeModel())
-                    .call(() -> ExportTools.exportAll(context, null));
+                    .call(() -> ExportTools.exportAll(context, null, ExportOptions.diskAndBytes()));
                 final long ms = System.currentTimeMillis() - start;
                 if (result.success()) {
                     context.addSessionDisplayLine("ok\texport.all (" + ms + "ms) [console]");

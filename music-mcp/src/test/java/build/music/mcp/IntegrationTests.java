@@ -1,5 +1,6 @@
 package build.music.mcp;
 
+import build.music.mcp.ExportOptions;
 import build.music.mcp.tools.ExportTools;
 import build.music.mcp.tools.ScoreTools;
 import build.music.mcp.tools.TransformTools;
@@ -61,7 +62,7 @@ class IntegrationTests {
 
         // 8. Export MIDI
         String midiPath = tempDir.resolve("ode_to_joy.mid").toString();
-        ToolResult midiResult = ExportTools.exportMidi(ctx, midiPath);
+        ToolResult midiResult = ExportTools.exportMidi(ctx, midiPath, ExportOptions.diskAndBytes());
         assertTrue(midiResult.success(), midiResult.message());
         assertTrue(Files.exists(Path.of(midiPath)));
 
