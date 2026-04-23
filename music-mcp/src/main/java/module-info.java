@@ -17,8 +17,11 @@ module build.music.mcp {
     requires build.base.transport;
     requires build.base.transport.json;
     requires build.base.version;
+    requires build.serve.mcp;
     requires com.fasterxml.jackson.core;
+    requires com.fasterxml.jackson.databind;
 
     exports build.music.mcp;
     exports build.music.mcp.tools;
+    opens build.music.mcp to com.fasterxml.jackson.databind;
 }

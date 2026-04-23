@@ -24,6 +24,10 @@
             <artifactId>serve-application</artifactId>
         </dependency>
         <dependency>
+            <groupId>build.serve</groupId>
+            <artifactId>serve-health</artifactId>
+        </dependency>
+        <dependency>
             <groupId>build.base</groupId>
             <artifactId>base-network</artifactId>
         </dependency>
