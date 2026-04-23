@@ -1,0 +1,41 @@
+package build.music.server.console;
+
+import build.base.template.HtmlOut;
+import build.music.server.console.TrackEntry;
+import java.util.List;
+
+template HtmlOut TracksPartial(List<TrackEntry> tracks, TrackEntry active) {
+@if (tracks.isEmpty()) {
+<p class="no-tracks">No tracks yet — use export.all to generate a track.</p>
+@include new RefreshButton()
+@} else {
+<div class="tracks-layout">
+  <div class="card track-list-wrap">
+    <h2 style="margin-bottom:10px;">Tracks</h2>
+    <div class="track-list">
+@for (var track : tracks) {
+      <div class="track-row">
+        <button class="track-btn #{active != null && track.name().equals(active.name()) ? "active" : ""}"
+                hx-get="/console/track/#{track.name()}"
+                hx-target="#track-detail"
+                hx-swap="innerHTML">#{track.name()}
+@if (!track.createdAt().isEmpty() || !track.midiSize().isEmpty()) {
+          <span class="track-meta">#{track.createdAt()}#{!track.midiSize().isEmpty() ? " · " + track.midiSize() : ""}</span>
+@}
+        </button>
+        <button class="btn-del"
+                hx-delete="/console/track/#{track.name()}"
+                hx-target="#tracks"
+                hx-swap="innerHTML"
+                hx-confirm="Delete '#{track.name()}'? This cannot be undone.">✕</button>
+      </div>
+@}
+    </div>
+    @include new RefreshButton()
+  </div>
+  <div id="track-detail" class="card track-detail">
+    @include new TrackDetailPartial(active)
+  </div>
+</div>
+@}
+@end

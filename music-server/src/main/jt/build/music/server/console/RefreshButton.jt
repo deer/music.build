@@ -1,0 +1,9 @@
+package build.music.server.console;
+
+import build.base.template.HtmlOut;
+
+template HtmlOut RefreshButton() {
+<div class="btn-row" style="margin-top:12px;">
+  <button onclick="htmx.ajax('GET', '/console/tracks?selected=' + encodeURIComponent(currentTrack), {target: '#tracks', swap: 'innerHTML'})">↻ Refresh</button>
+</div>
+@end

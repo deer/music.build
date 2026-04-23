@@ -20,6 +20,7 @@ import build.serve.application.Launcher;
 import build.serve.application.ServerApplication;
 import build.serve.foundation.routing.Router;
 import build.serve.foundation.routing.RouterBuilder;
+import build.serve.htmx.HtmxMiddleware;
 import build.serve.mcp.McpServer;
 import build.serve.mcp.McpTool;
 import build.serve.mcp.McpToolResult;
@@ -136,9 +137,41 @@ public final class MusicMcpServer extends ServerApplication.Implementation {
             } catch (final Exception e) {
                 log.log(System.Logger.Level.WARNING, "Session log serialization failed: {0}", e.getMessage());
             }
+
+            if (event.error().isEmpty()) {
+                context.addSessionDisplayLine("ok\t" + event.toolName() + " (" + event.durationMs() + "ms)");
+            } else {
+                final String msg = event.error().get().getMessage();
+                final String truncated = msg != null && msg.length() > 80 ? msg.substring(0, 80) + "…" : msg;
+                context.addSessionDisplayLine("err\t" + event.toolName() + " (" + event.durationMs() + "ms) — " + truncated);
+            }
         });
 
+        final ConsoleEventBus eventBus = new ConsoleEventBus();
+        mcp.toolCallEvents().subscribe(event -> {
+            eventBus.publish("state-changed", "");
+            if ("export.all".equals(event.toolName()) && event.error().isEmpty()) {
+                eventBus.publish("tracks-changed", "");
+            }
+        });
+
+        final ConsoleHandler console = new ConsoleHandler(context, eventBus);
+
         return RouterBuilder.create()
+            .get("/", console.page())
+            .get("/tracks/{folder}", console.page())
+            .get("/console/events", console.events())
+            .get("/files/{folder}/{file}", console.file())
+            .group(g -> g
+                .middleware(HtmxMiddleware.htmxOnly())
+                .get("/console/state", console.state())
+                .post("/console/clear", console.clear())
+                .post("/console/export", console.export())
+                .get("/console/tracks", console.tracks())
+                .get("/console/track/{folder}", console.trackDetail())
+                .post("/console/track/{folder}/load", console.loadTrack())
+                .delete("/console/track/{folder}", console.deleteTrack())
+                .get("/console/text/{folder}/{file}", console.fileText()))
             .route("/mcp", mcp.handler())
             .build();
     }
