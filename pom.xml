@@ -56,7 +56,7 @@
         <codemodel.version>0.21.1</codemodel.version>
         <jackson.version>2.21.2</jackson.version>
         <junit.version>6.0.3</junit.version>
-        <serve.version>0.2.2</serve.version>
+        <serve.version>0.2.3</serve.version>
 
         <!-- Plugin Versions -->
         <checkstyle.version>13.4.0</checkstyle.version>
@@ -177,6 +177,16 @@
             </dependency>
             <dependency>
                 <groupId>build.base</groupId>
+                <artifactId>base-template</artifactId>
+                <version>${base.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>build.base</groupId>
+                <artifactId>base-template-processor</artifactId>
+                <version>${base.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>build.base</groupId>
                 <artifactId>base-network</artifactId>
                 <version>${base.version}</version>
             </dependency>
@@ -208,6 +218,16 @@
             <dependency>
                 <groupId>build.serve</groupId>
                 <artifactId>serve-mcp</artifactId>
+                <version>${serve.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>build.serve</groupId>
+                <artifactId>serve-htmx</artifactId>
+                <version>${serve.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>build.serve</groupId>
+                <artifactId>serve-sse</artifactId>
                 <version>${serve.version}</version>
             </dependency>
 

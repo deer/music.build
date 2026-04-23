@@ -1,0 +1,58 @@
+package build.music.server.console;
+
+import build.base.template.HtmlOut;
+import build.music.server.console.TrackEntry;
+
+template HtmlOut TrackDetailPartial(TrackEntry track) {
+<div class="track-actions">
+  <h3>#{track.name()}</h3>
+@if (track.hasJson()) {
+  <form hx-post="/console/track/#{track.name()}/load"
+        hx-target="#track-detail"
+        hx-swap="innerHTML"
+        hx-disabled-elt="find button">
+    <button type="submit" class="btn-load">↩ Load<span class="htmx-indicator"> …</span></button>
+  </form>
+@}
+</div>
+@if (track.hasMidi()) {
+<h2 style="margin-top:4px;">Piano roll</h2>
+<midi-visualizer type="piano-roll" id="vis"></midi-visualizer>
+<midi-player src="/files/#{track.name()}/#{track.midiFile()}"
+             sound-font
+             visualizer="#vis"></midi-player>
+<div class="dl-row">
+  <a class="dl-link" href="/files/#{track.name()}/#{track.midiFile()}" download>↓ Download MIDI</a>
+</div>
+@}
+@if (track.hasPdf()) {
+<details>
+  <summary>Sheet music (PDF) &nbsp;<a class="dl-link" href="/files/#{track.name()}/#{track.pdfFile()}" download>↓ Download</a></summary>
+  <iframe class="pdf-frame" src="/files/#{track.name()}/#{track.pdfFile()}"></iframe>
+</details>
+@}
+@if (track.hasLy()) {
+<details id="d-ly">
+  <summary>LilyPond source &nbsp;<a class="dl-link" href="/files/#{track.name()}/#{track.lyFile()}" download>↓ Download</a></summary>
+  <div hx-get="/console/text/#{track.name()}/#{track.lyFile()}"
+       hx-trigger="toggle once from:#d-ly"
+       hx-swap="innerHTML"><span class="empty">click to load</span></div>
+</details>
+@}
+@if (track.hasJson()) {
+<details id="d-json">
+  <summary>Score JSON</summary>
+  <div hx-get="/console/text/#{track.name()}/#{track.jsonFile()}"
+       hx-trigger="toggle once from:#d-json"
+       hx-swap="innerHTML"><span class="empty">click to load</span></div>
+</details>
+@}
+@if (track.hasJsonl()) {
+<details id="d-log">
+  <summary>Session log</summary>
+  <div hx-get="/console/text/#{track.name()}/#{track.jsonlFile()}"
+       hx-trigger="toggle once from:#d-log"
+       hx-swap="innerHTML"><span class="empty">click to load</span></div>
+</details>
+@}
+@end

@@ -1,0 +1,7 @@
+package build.music.server.console;
+
+import build.base.template.HtmlOut;
+
+template HtmlOut FileContentPartial(String content) {
+<pre class="file-content">#{content}</pre>
+@end

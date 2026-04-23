@@ -27,9 +27,57 @@
             <groupId>build.base</groupId>
             <artifactId>base-network</artifactId>
         </dependency>
+        <dependency>
+            <groupId>build.base</groupId>
+            <artifactId>base-template</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>build.base</groupId>
+            <artifactId>base-template-processor</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>build.serve</groupId>
+            <artifactId>serve-htmx</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>build.serve</groupId>
+            <artifactId>serve-sse</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <generatedSourcesDirectory>${project.build.directory}/generated-sources/jt</generatedSourcesDirectory>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>build.base</groupId>
+                            <artifactId>base-template-processor</artifactId>
+                            <version>${base.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>add-generated-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals><goal>add-source</goal></goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources/jt</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>

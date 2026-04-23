@@ -1,0 +1,159 @@
+package build.music.server.console;
+
+import build.base.template.HtmlOut;
+
+template HtmlOut ConsolePage() {
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>music.build console</title>
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
+  <script type="module" src="https://esm.sh/html-midi-player@1.5.0"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: ui-monospace, monospace; font-size: 13px; background: #0d0d0d; color: #d4d4d4;
+           display: flex; flex-direction: column; padding: 16px; gap: 12px; overflow: hidden; }
+    h1 { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: 0.05em; flex-shrink: 0; }
+    h2 { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+    h3 { font-size: 13px; font-weight: 600; color: #ccc; margin-bottom: 12px; }
+    .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 16px; }
+    pre { white-space: pre-wrap; word-break: break-word; color: #ccc; line-height: 1.6; }
+    .file-content { font-size: 11px; color: #aaa; max-height: 300px; overflow-y: auto; }
+    .log-line { font-size: 11px; padding: 2px 0; border-bottom: 1px solid #1f1f1f; }
+    .log-line:last-child { border-bottom: none; }
+    .log-ok { color: #666; }
+    .log-err { color: #a05050; }
+    .log-sep { color: #444; font-style: italic; text-align: center; border-top: 1px solid #252525; border-bottom: 1px solid #252525; margin: 2px 0; padding: 3px 0; }
+    .htmx-indicator { display: none; }
+    .htmx-request .htmx-indicator { display: inline; }
+    .empty { color: #555; font-style: italic; }
+    button { padding: 5px 12px; background: #222; border: 1px solid #3a3a3a; border-radius: 4px;
+             color: #bbb; font-family: inherit; font-size: 12px; cursor: pointer; }
+    button:hover { background: #2a2a2a; border-color: #555; }
+    .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+    details { margin-top: 10px; }
+    summary { cursor: pointer; color: #888; font-size: 11px; user-select: none; }
+    summary:hover { color: #bbb; }
+    details[open] summary { color: #ccc; margin-bottom: 8px; }
+    .sse-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-left: 8px; vertical-align: middle; background: #444; }
+    .sse-dot.live { background: #4a9060; }
+    .sse-dot.dead { background: #904040; }
+    .dl-row { margin-top: 6px; margin-bottom: 4px; }
+    .dl-link { color: #5a7fa0; text-decoration: none; font-size: 11px; }
+    .dl-link:hover { text-decoration: underline; }
+    midi-player { display: block; width: 100%; margin-top: 16px; margin-bottom: 12px;
+                  --color-primary: #5a7fa0; --color-secondary: #3a5a78; }
+    midi-visualizer { display: block; width: 100%; height: 260px; --color-primary: #5a7fa0; }
+    .pdf-frame { width: 100%; height: 500px; border: none; margin-top: 8px; background: #111; }
+    .no-tracks { color: #555; font-style: italic; padding: 8px 0; }
+    .tabs { display: flex; gap: 2px; flex-shrink: 0; }
+    .tab-btn { border-radius: 4px 4px 0 0; border-bottom: none; padding: 6px 16px; }
+    .tab-btn.active { background: #1a1a1a; border-color: #2a2a2a; color: #fff; }
+    .tab-panel { display: none; flex: 1; min-height: 0; overflow: hidden; }
+    .tab-panel.active { display: flex; flex-direction: column; gap: 12px; }
+    .session-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; min-height: 0; }
+    .session-row .card { overflow-y: auto; min-height: 0; }
+    #tracks { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+    .tracks-layout { display: grid; grid-template-columns: 220px 1fr; gap: 16px; flex: 1; min-height: 0; }
+    .track-list-wrap { overflow-y: auto; min-height: 0; }
+    .track-list { display: flex; flex-direction: column; gap: 4px; }
+    .track-row { display: flex; gap: 4px; align-items: flex-start; }
+    .track-btn { flex: 1; min-width: 0; text-align: left; padding: 6px 10px; }
+    .track-btn.active { background: #2a3a4a; border-color: #5a7fa0; color: #fff; }
+    .track-meta { display: block; font-size: 10px; color: #555; margin-top: 2px; font-weight: normal; }
+    .track-btn.active .track-meta { color: #7a9ab8; }
+    .btn-del { flex-shrink: 0; padding: 4px 7px; color: #555; font-size: 11px; }
+    .btn-del:hover { color: #a05050; border-color: #a05050; }
+    .track-actions { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+    .track-actions h3 { margin-bottom: 0; flex: 1; }
+    .btn-load { font-size: 11px; padding: 4px 10px; flex-shrink: 0; }
+    .track-detail { overflow-y: auto; min-height: 0; }
+    .state-header { font-size: 11px; color: #666; padding: 2px 0; }
+    .state-header:not(:first-child) { margin-top: 6px; }
+    .state-entry { font-size: 11px; color: #bbb; padding: 1px 0 1px 12px; }
+  </style>
+</head>
+<body>
+  <h1>music.build <span id="sse-dot" class="sse-dot" title="SSE connection status"></span></h1>
+  <div class="tabs">
+    <button class="tab-btn active"
+            onclick="switchTab('session', this)">Session</button>
+    <button class="tab-btn"
+            onclick="switchTab('tracks', this)">Tracks</button>
+  </div>
+  <div id="tab-session" class="tab-panel active">
+    <div id="state"
+         hx-get="/console/state"
+         hx-trigger="load, state-changed"
+         hx-swap="innerHTML"></div>
+  </div>
+  <div id="tab-tracks" class="tab-panel">
+    <div id="tracks"
+         hx-get="/console/tracks"
+         hx-trigger="load"
+         hx-swap="innerHTML"></div>
+  </div>
+  <script>
+    function switchTab(name, btn) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + name).classList.add('active');
+      btn.classList.add('active');
+    }
+    let activePlayer = null;
+    let currentTrack = '';
+    const pathMatch = window.location.pathname.match(/^\/tracks\/(.+)/);
+    if (pathMatch) {
+      currentTrack = decodeURIComponent(pathMatch[1]);
+      switchTab('tracks', document.querySelectorAll('.tab-btn')[1]);
+    }
+    document.addEventListener('htmx:configRequest', function(e) {
+      if (e.detail.path === '/console/tracks' && currentTrack) {
+        e.detail.parameters['selected'] = currentTrack;
+      }
+    });
+    document.addEventListener('htmx:afterSettle', () => {
+      activePlayer = document.querySelector('midi-player');
+      // Keep currentTrack in sync with whatever button is active after any swap
+      const activeBtn = document.querySelector('.track-list button.active');
+      if (activeBtn) {
+        currentTrack = (activeBtn.getAttribute('hx-get') || '').replace('/console/track/', '');
+      }
+      // Scroll log card to bottom after state panel updates
+      const stateDiv = document.getElementById('state');
+      if (stateDiv) {
+        const logCard = stateDiv.querySelector('.session-row .card:last-child');
+        if (logCard) logCard.scrollTop = logCard.scrollHeight;
+      }
+    });
+    document.addEventListener('stopPlayer', () => {
+      if (activePlayer) activePlayer.stop();
+      activePlayer = null;
+    });
+    document.addEventListener('htmx:afterRequest', function(e) {
+      const hxGet = (e.detail.elt && e.detail.elt.getAttribute('hx-get')) || '';
+      if (hxGet.startsWith('/console/track/')) {
+        document.querySelectorAll('.track-list button').forEach(b => b.classList.remove('active'));
+        e.detail.elt.classList.add('active');
+        currentTrack = hxGet.replace('/console/track/', '');
+      }
+    });
+    const sseDot = document.getElementById('sse-dot');
+    const sse = new EventSource('/console/events');
+    sse.addEventListener('connected', () => sseDot.className = 'sse-dot live');
+    sse.addEventListener('state-changed', () => {
+      htmx.trigger(document.getElementById('state'), 'state-changed');
+    });
+    sse.addEventListener('tracks-changed', () => {
+      if (activePlayer) { activePlayer.stop(); activePlayer = null; }
+      htmx.ajax('GET', '/console/tracks?selected=' + encodeURIComponent(currentTrack), {target: '#tracks', swap: 'innerHTML'});
+    });
+    sse.addEventListener('error', () => sseDot.className = 'sse-dot dead');
+    sse.addEventListener('open', () => sseDot.className = 'sse-dot live');
+  </script>
+</body>
+</html>
+@end

@@ -67,6 +67,7 @@ public final class CompositionContext {
     private final Map<Integer, ChordSymbol> barChords = new LinkedHashMap<>();
     private List<StructuredVoice> structuredVoices = new ArrayList<>();
     private final List<String> sessionLog = new ArrayList<>();
+    private final List<String> sessionDisplayLog = new ArrayList<>();
 
     // --- Session log ---
 
@@ -82,6 +83,20 @@ public final class CompositionContext {
      */
     public List<String> sessionLogLines() {
         return Collections.unmodifiableList(sessionLog);
+    }
+
+    /**
+     * Appends a tab-prefixed display line ("ok\t..." or "err\t...") to the display log.
+     */
+    public void addSessionDisplayLine(final String line) {
+        sessionDisplayLog.add(line);
+    }
+
+    /**
+     * Returns the accumulated display log lines for console rendering.
+     */
+    public List<String> sessionDisplayLines() {
+        return Collections.unmodifiableList(sessionDisplayLog);
     }
 
     // --- Voice operations ---
@@ -313,6 +328,15 @@ public final class CompositionContext {
         }
         sb.append("\n");
         sb.append("Time signature: ").append(timeSignature.beats()).append("/").append(timeSignature.beatUnit()).append("\n");
+        if (key != null) {
+            sb.append("Key: ").append(key).append("\n");
+        }
+        if (progression != null) {
+            sb.append("Progression: ").append(progression).append("\n");
+        }
+        if (!barChords.isEmpty()) {
+            sb.append("Bar chords: ").append(barChords.size()).append(" bar").append(barChords.size() == 1 ? "" : "s").append(" defined\n");
+        }
 
         if (voices.isEmpty()) {
             sb.append("Voices: none\n");

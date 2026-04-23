@@ -1,0 +1,49 @@
+package build.music.server.console;
+
+import build.base.template.HtmlOut;
+import build.music.server.console.LogDisplayEntry;
+import java.util.List;
+
+template HtmlOut StatePartial(List<String> descriptionLines, List<LogDisplayEntry> logEntries, int totalLogCount) {
+<div class="session-row">
+  <div class="card">
+    <h2>State</h2>
+@for (var line : descriptionLines) {
+@if (line.startsWith("  ")) {
+    <div class="state-entry">#{line.strip()}</div>
+@} else {
+    <div class="state-header">#{line}</div>
+@}
+@}
+  </div>
+  <div class="card">
+@if (totalLogCount == 0) {
+    <h2>Session log</h2>
+    <span class="empty">no tool calls yet</span>
+@} else if (logEntries.size() < totalLogCount) {
+    <h2>Session log &mdash; last #{logEntries.size()} of #{totalLogCount}</h2>
+@for (var entry : logEntries) {
+    <div class="log-line #{entry.separator() ? "log-sep" : (entry.ok() ? "log-ok" : "log-err")}">#{entry.text()}</div>
+@}
+@} else {
+    <h2>Session log &mdash; #{totalLogCount} #{totalLogCount == 1 ? "entry" : "entries"}</h2>
+@for (var entry : logEntries) {
+    <div class="log-line #{entry.separator() ? "log-sep" : (entry.ok() ? "log-ok" : "log-err")}">#{entry.text()}</div>
+@}
+@}
+    <div class="btn-row">
+      <form hx-post="/console/export"
+            hx-target="#state"
+            hx-swap="innerHTML"
+            hx-disabled-elt="find button">
+        <button type="submit">Export<span class="htmx-indicator"> …</span></button>
+      </form>
+      <form hx-post="/console/clear"
+            hx-target="#state"
+            hx-swap="innerHTML">
+        <button type="submit" onclick="return confirm('Clear the entire session context?')">Clear context</button>
+      </form>
+    </div>
+  </div>
+</div>
+@end
