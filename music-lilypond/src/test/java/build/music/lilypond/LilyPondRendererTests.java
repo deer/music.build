@@ -7,16 +7,15 @@ import build.music.pitch.SpelledPitch;
 import build.music.score.Part;
 import build.music.score.Score;
 import build.music.score.Voice;
-import build.music.time.DottedValue;
 import build.music.time.Fraction;
 import build.music.time.RhythmicValue;
-import build.music.time.Tempo;
 import build.music.time.TimeSignature;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LilyPondRendererTests {
 

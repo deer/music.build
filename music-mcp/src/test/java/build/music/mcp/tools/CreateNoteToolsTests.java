@@ -9,7 +9,10 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CreateNoteToolsTests {
 
@@ -54,10 +57,10 @@ class CreateNoteToolsTests {
 
     @Test
     void parseAllDurationCodes() {
-        assertEquals(RhythmicValue.WHOLE,     CreateNoteTools.parseDuration("w"));
-        assertEquals(RhythmicValue.HALF,      CreateNoteTools.parseDuration("h"));
-        assertEquals(RhythmicValue.QUARTER,   CreateNoteTools.parseDuration("q"));
-        assertEquals(RhythmicValue.EIGHTH,    CreateNoteTools.parseDuration("e"));
+        assertEquals(RhythmicValue.WHOLE, CreateNoteTools.parseDuration("w"));
+        assertEquals(RhythmicValue.HALF, CreateNoteTools.parseDuration("h"));
+        assertEquals(RhythmicValue.QUARTER, CreateNoteTools.parseDuration("q"));
+        assertEquals(RhythmicValue.EIGHTH, CreateNoteTools.parseDuration("e"));
         assertEquals(RhythmicValue.SIXTEENTH, CreateNoteTools.parseDuration("s"));
     }
 

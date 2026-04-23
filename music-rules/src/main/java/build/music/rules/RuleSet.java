@@ -20,7 +20,9 @@ public record RuleSet(List<Rule> rules) {
         rules = List.copyOf(rules);
     }
 
-    /** Check a single voice against all rules. */
+    /**
+     * Check a single voice against all rules.
+     */
     public List<Violation> check(final Voice voice, final String voiceName) {
         final List<Violation> violations = new ArrayList<>();
         for (final Rule rule : rules) {
@@ -29,7 +31,9 @@ public record RuleSet(List<Rule> rules) {
         return List.copyOf(violations);
     }
 
-    /** Check a full score: single-voice rules + pairwise checks between all voice pairs. */
+    /**
+     * Check a full score: single-voice rules + pairwise checks between all voice pairs.
+     */
     public List<Violation> checkScore(final Score score) {
         final List<Violation> violations = new ArrayList<>();
         final List<Part> parts = score.scoreParts();
@@ -53,31 +57,41 @@ public record RuleSet(List<Rule> rules) {
         return List.copyOf(violations);
     }
 
-    /** Combine two rule sets into one. */
+    /**
+     * Combine two rule sets into one.
+     */
     public RuleSet and(final RuleSet other) {
         final List<Rule> combined = new ArrayList<>(rules);
         combined.addAll(other.rules());
         return new RuleSet(combined);
     }
 
-    /** Rule set for orchestration: range checks with assigned instruments. */
+    /**
+     * Rule set for orchestration: range checks with assigned instruments.
+     */
     public static RuleSet orchestration(final Map<String, Instrument> assignments) {
         return new RuleSet(assignments.entrySet().stream()
             .map(e -> (Rule) new RangeRule(e.getValue()))
             .toList());
     }
 
-    /** Rule set for basic counterpoint: parallel motion + voice leading. */
+    /**
+     * Rule set for basic counterpoint: parallel motion + voice leading.
+     */
     public static RuleSet counterpoint() {
         return new RuleSet(List.of(new ParallelMotionRule(), new VoiceLeadingRule()));
     }
 
-    /** Basic rule set: meter + voice leading. */
+    /**
+     * Basic rule set: meter + voice leading.
+     */
     public static RuleSet basic(final build.music.time.TimeSignature ts) {
         return new RuleSet(List.of(new MeterRule(ts), new VoiceLeadingRule()));
     }
 
-    /** Format violations as a readable report. */
+    /**
+     * Format violations as a readable report.
+     */
     public static String formatReport(final List<Violation> violations, final List<String> voiceNames) {
         if (violations.isEmpty()) {
             final String voices = String.join(", ", voiceNames);

@@ -1,6 +1,5 @@
 package build.music.mcp;
 
-import build.music.mcp.ExportOptions;
 import build.music.mcp.tools.ExportTools;
 import build.music.mcp.tools.ScoreTools;
 import build.music.mcp.tools.TransformTools;
@@ -12,7 +11,8 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Full composition workflow test — simulates what an AI agent would do
@@ -49,7 +49,7 @@ class IntegrationTests {
         assertTrue(ctx.hasVoice("melody_retro"));
 
         // 6. Assign instruments
-        assertTrue(ScoreTools.assignInstrument(ctx, "melody",      "piano").success());
+        assertTrue(ScoreTools.assignInstrument(ctx, "melody", "piano").success());
         assertTrue(ScoreTools.assignInstrument(ctx, "melody_high", "strings").success());
         // melody_retro intentionally left unassigned (gets default)
 

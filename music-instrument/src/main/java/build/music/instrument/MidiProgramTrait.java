@@ -9,7 +9,9 @@ import build.codemodel.foundation.descriptor.Trait;
 
 import java.lang.invoke.MethodHandles;
 
-/** General MIDI program number for an {@link Instrument} as a singular trait (0-127). */
+/**
+ * General MIDI program number for an {@link Instrument} as a singular trait (0-127).
+ */
 @Singular
 public record MidiProgramTrait(int program) implements Trait {
 

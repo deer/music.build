@@ -32,7 +32,9 @@ public record Tuplet(int actual, int normal, RhythmicValue unit) implements Dura
         unit.set(this.unit);
     }
 
-    /** Duration of each note in this tuplet as a fraction of a whole note. */
+    /**
+     * Duration of each note in this tuplet as a fraction of a whole note.
+     */
     @Override
     public Fraction fraction() {
         return unit.fraction().multiply(normal).divide(actual);

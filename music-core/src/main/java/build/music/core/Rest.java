@@ -18,8 +18,8 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 public final class Rest
-        extends AbstractTraitable
-        implements NoteEvent {
+    extends AbstractTraitable
+    implements NoteEvent {
 
     private Rest(final MusicCodeModel codeModel) {
         super(codeModel);

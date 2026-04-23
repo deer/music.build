@@ -10,7 +10,9 @@ import build.codemodel.foundation.descriptor.Trait;
 import java.lang.invoke.MethodHandles;
 import java.util.Objects;
 
-/** Name of an {@link Ensemble} as a singular trait. */
+/**
+ * Name of an {@link Ensemble} as a singular trait.
+ */
 @Singular
 public record EnsembleNameTrait(String name) implements Trait {
 

@@ -20,12 +20,16 @@ public record MeasureSlice(int measureNumber, List<NoteEvent> events, Fraction t
         events = List.copyOf(events);
     }
 
-    /** Does this measure have the correct total duration for the time signature? */
+    /**
+     * Does this measure have the correct total duration for the time signature?
+     */
     public boolean isComplete(final TimeSignature ts) {
         return totalDuration.compareTo(ts.measureDuration()) == 0;
     }
 
-    /** Pitches present in this measure (excluding rests). */
+    /**
+     * Pitches present in this measure (excluding rests).
+     */
     public List<SpelledPitch> pitches() {
         return events.stream()
             .filter(e -> e instanceof Note)

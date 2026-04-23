@@ -1,7 +1,6 @@
 package build.music.rules;
 
 import build.music.core.Note;
-import build.music.core.NoteEvent;
 import build.music.pitch.SpelledPitch;
 import build.music.score.Voice;
 import build.music.time.RhythmicValue;
@@ -10,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MeterRuleTests {
 

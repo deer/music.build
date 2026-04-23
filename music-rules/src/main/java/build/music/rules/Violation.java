@@ -32,14 +32,16 @@ public record Violation(
         return new Violation(rule, "suggestion", message, index, voice);
     }
 
-    /** Human-readable one-line summary. */
+    /**
+     * Human-readable one-line summary.
+     */
     @Override
     public String toString() {
         final String icon = switch (severity) {
-            case "error"      -> "✗";
-            case "warning"    -> "⚠";
+            case "error" -> "✗";
+            case "warning" -> "⚠";
             case "suggestion" -> "→";
-            default           -> "?";
+            default -> "?";
         };
         final String location = noteIndex >= 0 ? " (note " + noteIndex + ")" : "";
         return icon + " " + ruleName + ": " + message + location + " in '" + voiceName + "'";

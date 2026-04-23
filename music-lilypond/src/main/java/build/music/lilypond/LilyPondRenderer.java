@@ -167,8 +167,8 @@ public final class LilyPondRenderer {
                     .reduce(Fraction.ZERO, Fraction::add);
                 final Fraction endDur = volta.endings().isEmpty() ? Fraction.ZERO :
                     volta.endings().get(0).stream()
-                        .map(e -> e.duration().fraction())
-                        .reduce(Fraction.ZERO, Fraction::add);
+                    .map(e -> e.duration().fraction())
+                    .reduce(Fraction.ZERO, Fraction::add);
                 final int barsPerPass = (int) Math.round(
                     (bodyDur.add(endDur)).toDouble() / ts.measureDuration().toDouble());
                 barCounter[0] += barsPerPass * passCount;

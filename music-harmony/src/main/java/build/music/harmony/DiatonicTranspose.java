@@ -15,7 +15,8 @@ import java.util.List;
  */
 public final class DiatonicTranspose {
 
-    private DiatonicTranspose() {}
+    private DiatonicTranspose() {
+    }
 
     /**
      * Transpose a pitch up or down by the given number of scale steps within the key.

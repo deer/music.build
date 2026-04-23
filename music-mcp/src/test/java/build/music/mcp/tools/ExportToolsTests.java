@@ -13,7 +13,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ExportToolsTests {
 
@@ -83,10 +86,10 @@ class ExportToolsTests {
 
     @Test
     void exportMidiMultipleVoices(@TempDir Path tempDir) throws Exception {
-        VoiceTools.createVoice(ctx, "melody",   "E4/q E4/q F4/q G4/q");
-        VoiceTools.createVoice(ctx, "bass",     "C2/h G2/h");
+        VoiceTools.createVoice(ctx, "melody", "E4/q E4/q F4/q G4/q");
+        VoiceTools.createVoice(ctx, "bass", "C2/h G2/h");
         ScoreTools.assignInstrument(ctx, "melody", "violin");
-        ScoreTools.assignInstrument(ctx, "bass",   "cello");
+        ScoreTools.assignInstrument(ctx, "bass", "cello");
 
         String midiPath = tempDir.resolve("multi.mid").toString();
         ToolResult result = ExportTools.exportMidi(ctx, midiPath, ExportOptions.diskAndBytes());

@@ -23,7 +23,7 @@ import java.util.stream.Stream;
  * An ordered sequence of Roman numerals representing a chord progression.
  */
 public final class ChordProgression
-        extends AbstractTraitable {
+    extends AbstractTraitable {
 
     private ChordProgression(final MusicCodeModel codeModel) {
         super(codeModel);
@@ -58,7 +58,9 @@ public final class ChordProgression
 
     // ── derived ───────────────────────────────────────────────────────────────
 
-    /** Resolve to concrete chord symbols in the given key. */
+    /**
+     * Resolve to concrete chord symbols in the given key.
+     */
     public List<ChordSymbol> inKey(final Key key) {
         return chords().stream().map(rn -> rn.chordInKey(key)).toList();
     }
@@ -88,7 +90,9 @@ public final class ChordProgression
         ));
     }
 
-    /** 12-bar blues: I I I I IV IV I I V IV I V */
+    /**
+     * 12-bar blues: I I I I IV IV I I V IV I V
+     */
     public static ChordProgression twelveBarBlues() {
         return parse("I I I I IV IV I I V IV I V");
     }

@@ -8,7 +8,9 @@ import javax.sound.midi.Sequence;
 import javax.sound.midi.Sequencer;
 import javax.sound.midi.Synthesizer;
 
-/** Plays a MIDI Sequence through the system synthesizer. */
+/**
+ * Plays a MIDI Sequence through the system synthesizer.
+ */
 public final class MidiPlayer implements AutoCloseable {
 
     private final Sequencer sequencer;
@@ -26,7 +28,9 @@ public final class MidiPlayer implements AutoCloseable {
         }
     }
 
-    /** Play the sequence, blocking until complete. */
+    /**
+     * Play the sequence, blocking until complete.
+     */
     public void play(final Sequence sequence) throws InvalidMidiDataException {
         final CountDownLatch latch = new CountDownLatch(1);
         sequencer.addMetaEventListener(msg -> {
@@ -46,19 +50,25 @@ public final class MidiPlayer implements AutoCloseable {
         }
     }
 
-    /** Play without blocking. */
+    /**
+     * Play without blocking.
+     */
     public void playAsync(final Sequence sequence) throws InvalidMidiDataException {
         sequencer.setSequence(sequence);
         sequencer.setTickPosition(0);
         sequencer.start();
     }
 
-    /** Stop current playback. */
+    /**
+     * Stop current playback.
+     */
     public void stop() {
         sequencer.stop();
     }
 
-    /** Whether playback is currently running. */
+    /**
+     * Whether playback is currently running.
+     */
     public boolean isPlaying() {
         return sequencer.isRunning();
     }

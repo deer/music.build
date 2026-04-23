@@ -21,9 +21,12 @@ import java.util.stream.Collectors;
  */
 public final class HarmonyTools {
 
-    private HarmonyTools() {}
+    private HarmonyTools() {
+    }
 
-    /** Tool: harmony.set_key — set the current key for the composition. */
+    /**
+     * Tool: harmony.set_key — set the current key for the composition.
+     */
     public static ToolResult setKey(final CompositionContext ctx, final String keyDescription) {
         try {
             final Key key = Key.parse(keyDescription);
@@ -31,14 +34,16 @@ public final class HarmonyTools {
             final int sig = key.signatureAccidentals();
             final String sigDesc = sig == 0 ? "no sharps or flats"
                 : sig > 0 ? sig + " sharp" + (sig == 1 ? "" : "s")
-                : Math.abs(sig) + " flat" + (Math.abs(sig) == 1 ? "" : "s");
+                  : Math.abs(sig) + " flat" + (Math.abs(sig) == 1 ? "" : "s");
             return ToolResult.success("Key set to " + key + " (" + sigDesc + ").");
         } catch (final IllegalArgumentException e) {
             return ToolResult.error(e.getMessage());
         }
     }
 
-    /** Tool: harmony.chord_progression — create a chord progression from Roman numerals. */
+    /**
+     * Tool: harmony.chord_progression — create a chord progression from Roman numerals.
+     */
     public static ToolResult setChordProgression(final CompositionContext ctx, final String progressionStr) {
         try {
             final ChordProgression prog = ChordProgression.parse(progressionStr);
@@ -56,9 +61,11 @@ public final class HarmonyTools {
         }
     }
 
-    /** Tool: harmony.harmonize — add chord root accompaniment to a voice. */
+    /**
+     * Tool: harmony.harmonize — add chord root accompaniment to a voice.
+     */
     public static ToolResult harmonize(final CompositionContext ctx, final String voiceName,
-            final String targetVoice, final int voicingOctave) {
+                                       final String targetVoice, final int voicingOctave) {
         try {
             if (!ctx.hasKey()) {
                 return ToolResult.error("No key set. Use harmony.set_key first.");
@@ -78,7 +85,9 @@ public final class HarmonyTools {
         }
     }
 
-    /** Tool: harmony.suggest_harmony — auto-suggest a chord progression for a melody. */
+    /**
+     * Tool: harmony.suggest_harmony — auto-suggest a chord progression for a melody.
+     */
     public static ToolResult suggestHarmony(final CompositionContext ctx, final String voiceName) {
         try {
             if (!ctx.hasKey()) {
@@ -97,7 +106,9 @@ public final class HarmonyTools {
         }
     }
 
-    /** Tool: harmony.detect_key — detect the key of an existing voice. */
+    /**
+     * Tool: harmony.detect_key — detect the key of an existing voice.
+     */
     public static ToolResult detectKey(final CompositionContext ctx, final String voiceName) {
         try {
             final List<NoteEvent> events = ctx.getVoice(voiceName);
@@ -125,7 +136,7 @@ public final class HarmonyTools {
                 if (colon < 0) {
                     return ToolResult.error(
                         "Invalid bar chord token '" + token +
-                        "'. Expected 'bar:chord' e.g. '1:Cm7'. Got: '" + token + "'.");
+                            "'. Expected 'bar:chord' e.g. '1:Cm7'. Got: '" + token + "'.");
                 }
                 final int bar = Integer.parseInt(token.substring(0, colon).trim());
                 final ChordSymbol symbol = ChordSymbol.parse(token.substring(colon + 1).trim());
@@ -155,7 +166,7 @@ public final class HarmonyTools {
      * @param bars        number of bars (default = number of chords defined)
      */
     public static ToolResult walkingBass(
-            final CompositionContext ctx, final String targetVoice, final int octave, final Integer bars) {
+        final CompositionContext ctx, final String targetVoice, final int octave, final Integer bars) {
         try {
             List<ChordSymbol> chords;
 
@@ -170,7 +181,7 @@ public final class HarmonyTools {
             } else {
                 return ToolResult.error(
                     "No chord information found. Use harmony.set_bars to declare chord changes, " +
-                    "or use harmony.set_key + harmony.chord_progression first.");
+                        "or use harmony.set_key + harmony.chord_progression first.");
             }
 
             // Optionally repeat/trim to requested bar count
@@ -192,8 +203,8 @@ public final class HarmonyTools {
             ctx.createVoice(target, bassLine);
             return ToolResult.success(
                 "Generated walking bass '" + target + "': " + chords.size() +
-                " bar(s), " + bassLine.size() + " notes at octave " + octave + ". " +
-                "Assign to electric_bass or synth_bass for playback.");
+                    " bar(s), " + bassLine.size() + " notes at octave " + octave + ". " +
+                    "Assign to electric_bass or synth_bass for playback.");
         } catch (final IllegalArgumentException e) {
             return ToolResult.error(e.getMessage());
         }
@@ -201,13 +212,13 @@ public final class HarmonyTools {
 
     /**
      * Tool: harmony.comp — generate a comping (chord accompaniment) voice over bar-level chord changes.
-     *
+     * <p>
      * Styles:
-     *   quarter_stabs  — block chord on beats 2 and 4 (jazz comping default)
-     *   on_beat        — block chord on every beat
-     *   eighth_pump    — block chord on every eighth note (funk/rock)
-     *   shell_voicings — root + 7th (or root + 5th for triads) on beats 2 and 4
-     *   charleston     — dotted quarter + eighth + quarter (classic jazz Charleston rhythm)
+     * quarter_stabs  — block chord on beats 2 and 4 (jazz comping default)
+     * on_beat        — block chord on every beat
+     * eighth_pump    — block chord on every eighth note (funk/rock)
+     * shell_voicings — root + 7th (or root + 5th for triads) on beats 2 and 4
+     * charleston     — dotted quarter + eighth + quarter (classic jazz Charleston rhythm)
      *
      * @param targetVoice name for the generated comping voice (default "comp")
      * @param octave      voicing octave (default 3 — mid-range Rhodes/piano comping)
@@ -215,7 +226,7 @@ public final class HarmonyTools {
      * @param bars        number of bars (default = number of chords defined)
      */
     public static ToolResult comp(
-            final CompositionContext ctx, final String targetVoice, final int octave, final String style, final Integer bars) {
+        final CompositionContext ctx, final String targetVoice, final int octave, final String style, final Integer bars) {
         try {
             List<ChordSymbol> chords;
 
@@ -229,7 +240,7 @@ public final class HarmonyTools {
             } else {
                 return ToolResult.error(
                     "No chord information found. Use harmony.set_bars to declare chord changes, " +
-                    "or use harmony.set_key + harmony.chord_progression first.");
+                        "or use harmony.set_key + harmony.chord_progression first.");
             }
 
             // Repeat/trim to requested bar count
@@ -247,16 +258,18 @@ public final class HarmonyTools {
             ctx.createVoice(target, compVoice);
             return ToolResult.success(
                 "Generated comping voice '" + target + "' (" + compStyle + " style): " +
-                chords.size() + " bar(s), " + compVoice.size() + " events at octave " + octave + ". " +
-                "Assign to piano, rhodes, or guitar instrument for playback.");
+                    chords.size() + " bar(s), " + compVoice.size() + " events at octave " + octave + ". " +
+                    "Assign to piano, rhodes, or guitar instrument for playback.");
         } catch (final IllegalArgumentException e) {
             return ToolResult.error(e.getMessage());
         }
     }
 
-    /** Tool: harmony.diatonic_transpose — transpose a voice by scale steps within the key. */
+    /**
+     * Tool: harmony.diatonic_transpose — transpose a voice by scale steps within the key.
+     */
     public static ToolResult diatonicTranspose(final CompositionContext ctx,
-            final String voiceName, final int steps, final String targetVoice) {
+                                               final String voiceName, final int steps, final String targetVoice) {
         try {
             if (!ctx.hasKey()) {
                 return ToolResult.error("No key set. Use harmony.set_key first.");

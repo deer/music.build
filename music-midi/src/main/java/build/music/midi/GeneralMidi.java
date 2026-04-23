@@ -1,6 +1,8 @@
 package build.music.midi;
 
-/** General MIDI program number constants. */
+/**
+ * General MIDI program number constants.
+ */
 public final class GeneralMidi {
 
     public static final int ACOUSTIC_GRAND_PIANO = 0;
@@ -23,8 +25,11 @@ public final class GeneralMidi {
     public static final int FLUTE = 73;
     public static final int PAN_FLUTE = 75;
 
-    /** GM percussion channel (0-indexed). */
+    /**
+     * GM percussion channel (0-indexed).
+     */
     public static final int DRUM_CHANNEL = 9;
 
-    private GeneralMidi() {}
+    private GeneralMidi() {
+    }
 }

@@ -32,7 +32,7 @@ public record TempoChange(int startBar, int endBar, int fromBpm, int toBpm, Stri
         if (fromBpm < 1 || fromBpm > 400) {
             throw new IllegalArgumentException("fromBpm out of range: " + fromBpm);
         }
-        if (toBpm   < 1 || toBpm   > 400) {
+        if (toBpm < 1 || toBpm > 400) {
             throw new IllegalArgumentException("toBpm out of range: " + toBpm);
         }
         if (!"linear".equals(curve) && !"exponential".equals(curve)) {
@@ -57,7 +57,9 @@ public record TempoChange(int startBar, int endBar, int fromBpm, int toBpm, Stri
         Marshalling.register(TempoChange.class, MethodHandles.lookup());
     }
 
-    /** Whether this is a deceleration (ritardando). */
+    /**
+     * Whether this is a deceleration (ritardando).
+     */
     public boolean isDecelerating() {
         return toBpm < fromBpm;
     }

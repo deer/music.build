@@ -12,13 +12,16 @@ import build.music.score.Voice;
 import build.music.time.Fraction;
 import build.music.time.RhythmicValue;
 import build.music.time.Tempo;
-import build.music.time.TimeSignature;
 import org.junit.jupiter.api.Test;
 
-import javax.sound.midi.*;
 import java.util.List;
+import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MidiEvent;
+import javax.sound.midi.Sequence;
+import javax.sound.midi.ShortMessage;
+import javax.sound.midi.Track;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class MidiRendererTests {
 

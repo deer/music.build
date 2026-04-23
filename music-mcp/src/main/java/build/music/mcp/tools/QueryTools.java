@@ -12,7 +12,8 @@ import java.util.List;
  */
 public final class QueryTools {
 
-    private QueryTools() {}
+    private QueryTools() {
+    }
 
     /**
      * Tool: query.voice — display the notes of a specific voice.

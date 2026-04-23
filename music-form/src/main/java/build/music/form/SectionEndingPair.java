@@ -18,8 +18,8 @@ public record SectionEndingPair(int pass, Section section) implements Trait {
 
     @Unmarshal
     public SectionEndingPair(final Marshaller marshaller,
-                              final int pass,
-                              final Marshalled<Section> section) {
+                             final int pass,
+                             final Marshalled<Section> section) {
         this(pass, marshaller.unmarshal(section));
     }
 

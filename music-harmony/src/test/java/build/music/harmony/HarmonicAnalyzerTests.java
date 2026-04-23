@@ -3,7 +3,6 @@ package build.music.harmony;
 import build.music.core.ChordSymbol;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
-import build.music.pitch.Accidental;
 import build.music.pitch.NoteName;
 import build.music.pitch.SpelledPitch;
 import build.music.time.RhythmicValue;
@@ -11,7 +10,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class HarmonicAnalyzerTests {
 
@@ -26,10 +27,10 @@ class HarmonicAnalyzerTests {
         );
         List<RomanNumeral> labels = HarmonicAnalyzer.analyze(chords, cMajor);
         assertEquals(4, labels.size());
-        assertEquals(ScaleDegree.I,  labels.get(0).degree());
+        assertEquals(ScaleDegree.I, labels.get(0).degree());
         assertEquals(ScaleDegree.IV, labels.get(1).degree());
-        assertEquals(ScaleDegree.V,  labels.get(2).degree());
-        assertEquals(ScaleDegree.I,  labels.get(3).degree());
+        assertEquals(ScaleDegree.V, labels.get(2).degree());
+        assertEquals(ScaleDegree.I, labels.get(3).degree());
     }
 
     @Test

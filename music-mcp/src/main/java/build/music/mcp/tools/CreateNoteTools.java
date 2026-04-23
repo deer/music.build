@@ -21,27 +21,28 @@ import java.util.List;
  */
 public final class CreateNoteTools {
 
-    private CreateNoteTools() {}
+    private CreateNoteTools() {
+    }
 
     /**
      * Parse a compact note sequence string into a list of NoteEvents.
-     *
+     * <p>
      * Format: "pitch/duration" tokens separated by spaces.
      * Pitch: "C4", "C#4", "Bb3", etc. Use "r" for a rest.
      * Chord: "&lt;C4 E4 G4&gt;/q" — angle-bracket-enclosed space-separated pitches.
      * Duration codes:
-     *   w=whole, h=half, q=quarter, e=eighth, s=sixteenth
-     *   dh=dotted half, dq=dotted quarter, de=dotted eighth
+     * w=whole, h=half, q=quarter, e=eighth, s=sixteenth
+     * dh=dotted half, dq=dotted quarter, de=dotted eighth
      * Articulations (append after duration with ~):
-     *   ~stac=staccato, ~acc=accent, ~ten=tenuto, ~marc=marcato, ~leg=legato
+     * ~stac=staccato, ~acc=accent, ~ten=tenuto, ~marc=marcato, ~leg=legato
      * Ties: append ~tie to hold a note into the next bar: "G4/h~tie G4/q"
-     *
+     * <p>
      * Examples:
-     *   "C4/q D4/q E4/q F4/q"         — four quarter notes
-     *   "C4/dq D4/e E4/h"             — dotted quarter, eighth, half
-     *   "C4/q r/q E4/q r/q"           — notes with rests
-     *   "&lt;C4 E4 G4&gt;/q &lt;F4 A4 C5&gt;/h"   — two chords
-     *   "C4/q~stac D4/q~acc E4/h"     — staccato C, accented D, normal E
+     * "C4/q D4/q E4/q F4/q"         — four quarter notes
+     * "C4/dq D4/e E4/h"             — dotted quarter, eighth, half
+     * "C4/q r/q E4/q r/q"           — notes with rests
+     * "&lt;C4 E4 G4&gt;/q &lt;F4 A4 C5&gt;/h"   — two chords
+     * "C4/q~stac D4/q~acc E4/h"     — staccato C, accented D, normal E
      */
     public static List<NoteEvent> parseNoteSequence(final String notes) {
         if (notes == null || notes.isBlank()) {
@@ -94,7 +95,9 @@ public final class CreateNoteTools {
         return events;
     }
 
-    /** Parse a chord token: pitchesStr = "C4 E4 G4", durPart = "/q" or "/q~stac". */
+    /**
+     * Parse a chord token: pitchesStr = "C4 E4 G4", durPart = "/q" or "/q~stac".
+     */
     private static NoteEvent parseChordToken(final String pitchesStr, final String durPart) {
         if (!durPart.startsWith("/")) {
             throw new IllegalArgumentException(
@@ -118,7 +121,9 @@ public final class CreateNoteTools {
         return Chord.of(pitches, duration, Velocity.MF);
     }
 
-    /** Parse a single note/rest token like "C4/q", "r/h", "C4/q~stac". */
+    /**
+     * Parse a single note/rest token like "C4/q", "r/h", "C4/q~stac".
+     */
     static NoteEvent parseToken(final String token) {
         final int slash = token.lastIndexOf('/');
         if (slash < 0) {
@@ -167,11 +172,11 @@ public final class CreateNoteTools {
 
     static Duration parseDuration(final String code) {
         return switch (code.toLowerCase()) {
-            case "w"  -> RhythmicValue.WHOLE;
-            case "h"  -> RhythmicValue.HALF;
-            case "q"  -> RhythmicValue.QUARTER;
-            case "e"  -> RhythmicValue.EIGHTH;
-            case "s"  -> RhythmicValue.SIXTEENTH;
+            case "w" -> RhythmicValue.WHOLE;
+            case "h" -> RhythmicValue.HALF;
+            case "q" -> RhythmicValue.QUARTER;
+            case "e" -> RhythmicValue.EIGHTH;
+            case "s" -> RhythmicValue.SIXTEENTH;
             case "dh" -> new DottedValue(RhythmicValue.HALF, 1);
             case "dq" -> new DottedValue(RhythmicValue.QUARTER, 1);
             case "de" -> new DottedValue(RhythmicValue.EIGHTH, 1);
@@ -179,27 +184,29 @@ public final class CreateNoteTools {
             case "q3" -> Tuplet.triplet(RhythmicValue.QUARTER);
             case "e3" -> Tuplet.triplet(RhythmicValue.EIGHTH);
             case "s3" -> Tuplet.triplet(RhythmicValue.SIXTEENTH);
-            default   -> throw new IllegalArgumentException(
+            default -> throw new IllegalArgumentException(
                 "Unknown duration code '" + code + "'. Valid codes: w, h, q, e, s, dh, dq, de, h3, q3, e3, s3.");
         };
     }
 
     static Articulation parseArticulation(final String code) {
         return switch (code.toLowerCase()) {
-            case "stac"  -> Articulation.STACCATO;
+            case "stac" -> Articulation.STACCATO;
             case "stacs" -> Articulation.STACCATISSIMO;
-            case "acc"   -> Articulation.ACCENT;
-            case "ten"   -> Articulation.TENUTO;
-            case "marc"  -> Articulation.MARCATO;
-            case "leg"   -> Articulation.LEGATO;
-            case "port"  -> Articulation.PORTATO;
+            case "acc" -> Articulation.ACCENT;
+            case "ten" -> Articulation.TENUTO;
+            case "marc" -> Articulation.MARCATO;
+            case "leg" -> Articulation.LEGATO;
+            case "port" -> Articulation.PORTATO;
             default -> throw new IllegalArgumentException(
                 "Unknown articulation code '" + code +
-                "'. Valid codes: stac, stacs, acc, ten, marc, leg, port.");
+                    "'. Valid codes: stac, stacs, acc, ten, marc, leg, port.");
         };
     }
 
-    /** Format a list of NoteEvents as a compact human-readable string. */
+    /**
+     * Format a list of NoteEvents as a compact human-readable string.
+     */
     public static String formatSequence(final List<NoteEvent> events) {
         final var sb = new StringBuilder();
         for (final NoteEvent event : events) {
@@ -241,25 +248,25 @@ public final class CreateNoteTools {
     static String formatDuration(final Duration d) {
         return switch (d) {
             case RhythmicValue rv -> switch (rv) {
-                case WHOLE      -> "w";
-                case HALF       -> "h";
-                case QUARTER    -> "q";
-                case EIGHTH     -> "e";
-                case SIXTEENTH  -> "s";
-                default         -> rv.fraction().toString();
+                case WHOLE -> "w";
+                case HALF -> "h";
+                case QUARTER -> "q";
+                case EIGHTH -> "e";
+                case SIXTEENTH -> "s";
+                default -> rv.fraction().toString();
             };
             case DottedValue dv -> switch (dv.base()) {
-                case HALF    -> "dh";
+                case HALF -> "dh";
                 case QUARTER -> "dq";
-                case EIGHTH  -> "de";
-                default      -> dv.fraction().toString();
+                case EIGHTH -> "de";
+                default -> dv.fraction().toString();
             };
             case Tuplet t when t.actual() == 3 && t.normal() == 2 -> switch (t.unit()) {
-                case HALF      -> "h3";
-                case QUARTER   -> "q3";
-                case EIGHTH    -> "e3";
+                case HALF -> "h3";
+                case QUARTER -> "q3";
+                case EIGHTH -> "e3";
                 case SIXTEENTH -> "s3";
-                default        -> t.fraction().toString();
+                default -> t.fraction().toString();
             };
             default -> d.fraction().toString();
         };

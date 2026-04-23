@@ -4,10 +4,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/** Invokes LilyPond to produce PDF/PNG from LilyPond source. Requires lilypond on PATH. */
+/**
+ * Invokes LilyPond to produce PDF/PNG from LilyPond source. Requires lilypond on PATH.
+ */
 public final class LilyPondEngraver {
 
-    private LilyPondEngraver() {}
+    private LilyPondEngraver() {
+    }
 
     /**
      * Write LilyPond source to a .ly file and invoke lilypond to produce a PDF.
@@ -45,7 +48,9 @@ public final class LilyPondEngraver {
         return outputDir.resolve(baseName + ".png");
     }
 
-    /** Check whether lilypond is installed and available. */
+    /**
+     * Check whether lilypond is installed and available.
+     */
     public static boolean isAvailable() {
         return findExecutable() != null;
     }
@@ -72,7 +77,7 @@ public final class LilyPondEngraver {
     }
 
     private static void runLilyPond(final Path outputDir, final String baseName, final Path lyFile, final String formatFlag)
-            throws IOException {
+        throws IOException {
         final String executable = findExecutable();
         if (executable == null) {
             throw new IOException("lilypond not found on PATH or in /usr/bin, /usr/local/bin");

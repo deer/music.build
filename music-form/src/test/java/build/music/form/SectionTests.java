@@ -1,7 +1,6 @@
 package build.music.form;
 
 import build.music.core.Note;
-import build.music.core.NoteEvent;
 import build.music.pitch.SpelledPitch;
 import build.music.score.Voice;
 import build.music.time.Fraction;
@@ -12,7 +11,9 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SectionTests {
 

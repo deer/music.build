@@ -12,10 +12,14 @@ import build.codemodel.foundation.descriptor.Trait;
  * JPMS module.
  */
 public interface Duration extends Trait {
-    /** Duration as a fraction of a whole note. */
+    /**
+     * Duration as a fraction of a whole note.
+     */
     Fraction fraction();
 
-    /** Wall-clock duration at the given tempo. */
+    /**
+     * Wall-clock duration at the given tempo.
+     */
     java.time.Duration absolute(Tempo tempo);
 
     default int compareTo(final Duration other) {

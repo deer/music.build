@@ -6,7 +6,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class KeyTests {
 
@@ -37,14 +39,14 @@ class KeyTests {
 
     @Test
     void signatureAccidentals() {
-        assertEquals(0,  Key.major(NoteName.C).signatureAccidentals());
-        assertEquals(1,  Key.major(NoteName.G).signatureAccidentals());
-        assertEquals(2,  Key.major(NoteName.D).signatureAccidentals());
+        assertEquals(0, Key.major(NoteName.C).signatureAccidentals());
+        assertEquals(1, Key.major(NoteName.G).signatureAccidentals());
+        assertEquals(2, Key.major(NoteName.D).signatureAccidentals());
         assertEquals(-1, Key.major(NoteName.F).signatureAccidentals());
         assertEquals(-2, Key.major(NoteName.B, Accidental.FLAT).signatureAccidentals());
         assertEquals(-4, Key.major(NoteName.A, Accidental.FLAT).signatureAccidentals());
-        assertEquals(0,  Key.minor(NoteName.A).signatureAccidentals());
-        assertEquals(1,  Key.minor(NoteName.E).signatureAccidentals());
+        assertEquals(0, Key.minor(NoteName.A).signatureAccidentals());
+        assertEquals(1, Key.minor(NoteName.E).signatureAccidentals());
         assertEquals(-1, Key.minor(NoteName.D).signatureAccidentals());
     }
 

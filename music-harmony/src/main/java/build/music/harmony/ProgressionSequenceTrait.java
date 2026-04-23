@@ -23,7 +23,7 @@ public record ProgressionSequenceTrait(List<RomanNumeral> numerals) implements T
 
     @Unmarshal
     public ProgressionSequenceTrait(final Marshaller marshaller,
-                                     final Stream<Marshalled<RomanNumeral>> numerals) {
+                                    final Stream<Marshalled<RomanNumeral>> numerals) {
         this(numerals.map(marshaller::unmarshal).toList());
     }
 

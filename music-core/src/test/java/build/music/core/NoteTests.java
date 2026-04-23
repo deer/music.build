@@ -5,7 +5,9 @@ import build.music.pitch.NoteName;
 import build.music.pitch.SpelledPitch;
 import build.music.time.RhythmicValue;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class NoteTests {
 

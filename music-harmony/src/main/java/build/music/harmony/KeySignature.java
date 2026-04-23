@@ -15,12 +15,16 @@ public record KeySignature(Key key) {
         Objects.requireNonNull(key, "key must not be null");
     }
 
-    /** Number of sharps (greater than 0) or flats (less than 0). */
+    /**
+     * Number of sharps (greater than 0) or flats (less than 0).
+     */
     public int accidentalCount() {
         return key.signatureAccidentals();
     }
 
-    /** The accidental notes in order (for notation). */
+    /**
+     * The accidental notes in order (for notation).
+     */
     public List<NoteName> accidentals() {
         return key.accidentalNotes();
     }

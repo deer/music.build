@@ -10,7 +10,9 @@ import build.codemodel.foundation.descriptor.Trait;
 import java.lang.invoke.MethodHandles;
 import java.util.Objects;
 
-/** Name of a {@link Part} as a singular trait. */
+/**
+ * Name of a {@link Part} as a singular trait.
+ */
 @Singular
 public record PartNameTrait(String name) implements Trait {
 

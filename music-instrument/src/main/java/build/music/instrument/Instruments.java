@@ -17,7 +17,8 @@ import static build.music.instrument.InstrumentFamily.WOODWIND;
  */
 public final class Instruments {
 
-    private Instruments() {}
+    private Instruments() {
+    }
 
     // --- Woodwinds ---
 
@@ -182,12 +183,12 @@ public final class Instruments {
 
     static List<Articulation> standardArticulations() {
         return List.of(Articulation.NORMAL, Articulation.STACCATO, Articulation.ACCENT,
-                       Articulation.TENUTO);
+            Articulation.TENUTO);
     }
 
     static List<Articulation> stringArticulations() {
         return List.of(Articulation.NORMAL, Articulation.STACCATO, Articulation.ACCENT,
-                       Articulation.TENUTO, Articulation.LEGATO, Articulation.PORTATO);
+            Articulation.TENUTO, Articulation.LEGATO, Articulation.PORTATO);
     }
 
     static List<Articulation> keyboardArticulations() {

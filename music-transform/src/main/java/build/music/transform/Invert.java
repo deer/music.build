@@ -31,7 +31,8 @@ public record Invert(Pitch axis) implements PitchTransform {
                 final Accidental acc = Accidental.fromOffset(accOffset);
                 try {
                     return SpelledPitch.of(newName, acc, oct);
-                } catch (final IllegalArgumentException ignored) {}
+                } catch (final IllegalArgumentException ignored) {
+                }
             }
         }
         throw new IllegalArgumentException("Cannot compute inversion of " + input + " around " + axis);
