@@ -19,6 +19,7 @@ import build.music.time.Fraction;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -57,6 +58,18 @@ public final class Voice
         v.addTrait(VoiceNameTrait.of(name));
         v.addTrait(EventSequenceTrait.of(immutable));
         return v;
+    }
+
+    // ── mereology ─────────────────────────────────────────────────────────────
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> Iterator<T> iterator(final Class<T> type) {
+        if (type != null
+                && (type.isAssignableFrom(NoteEvent.class) || NoteEvent.class.isAssignableFrom(type))) {
+            return (Iterator<T>) events().stream().filter(type::isInstance).iterator();
+        }
+        return super.iterator(type);
     }
 
     // ── accessors ────────────────────────────────────────────────────────────
