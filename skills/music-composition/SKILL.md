@@ -91,11 +91,18 @@ C4/q~stac D4/q~stac r/e E4/e F4/q  # staccato melody
 ### Voices
 - `voice.create` — create a named voice from a note sequence
 - `voice.append` — append more notes to an existing voice
-- `voice.list` — list all voices with event counts and duration
+- `voice.list` — list all voices with bar counts, event counts, and duration
+- `voice.measure_count` — return the number of complete bars in a single voice
 - `voice.set_dynamics` — set volume for a voice: `ppp pp p mp mf f ff fff` (default: mf)
 - `voice.set_articulation` — set articulation for a voice: `staccato accent tenuto marcato legato`. Optional `from_bar` / `to_bar` to scope to a bar range (e.g. make only the final phrase tenuto).
 - `voice.from_motif` — Advanced: create a voice from a saved motif, optionally transformed
 - `voice.delete` — remove a voice from the composition
+
+### Voice editing (write-back — modifies the voice in place)
+- `voice.trim` — truncate a voice to N bars, discarding everything after
+- `voice.set_bar` — replace one bar's content: `bar=N notes="C4/q D4/q E4/q F4/q"`. Use `query.voice` to inspect before editing.
+- `voice.replace_range` — replace bars `from_bar`–`to_bar` (inclusive) with a new note sequence. The replacement doesn't have to fill the same number of bars.
+- `voice.replace_note` — surgical fix: find the first note in bar N whose pitch matches `old`, replace it with `new`. Both old and new are full note tokens including duration, e.g. `old="C4/q" new="D4/q"`. Use `query.voice` to inspect bar content first.
 
 ### Query
 - `query.voice` — show the note sequence of a voice
@@ -152,10 +159,12 @@ C4/q~stac D4/q~stac r/e E4/e F4/q  # staccato melody
 - `export.all` — **preferred** — creates a folder with .mid, .ly, .json, and PDF (if LilyPond installed). The server auto-prepends a sequential number to the folder name (e.g. `folder="sunlit_yard"` → `25_sunlit_yard`). Do NOT include a number yourself — it will double-prefix (e.g. `25_25_sunlit_yard`).
 - `export.midi` — write a .mid file to the current directory
 - `export.lilypond` — write a .ly file (and engrave PDF if LilyPond is installed)
+- `export.musicxml` — write a MusicXML 4.0 file (.musicxml). Opens in MuseScore, Dorico, Sibelius, Finale, and most DAWs.
 
 ### Session persistence
 - `score.save` — save the full composition state to a JSON snapshot under `generated_tracks/` (voices, motifs, metadata, key, swing, bar chords, tempo changes). Use to checkpoint work in progress.
 - `score.load` — restore a previously saved snapshot, replacing all current state.
+- `score.load_midi` — import a MIDI file as voices (`voice-0`, `voice-1`, …) and set tempo from the file. Existing voices are preserved; call `score.clear` first for a clean slate. Black keys come back as sharps — re-spell with `transform.transpose` if needed. `path` is absolute or relative to the server working directory.
 
 ## Available Instruments
 

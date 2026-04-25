@@ -8,6 +8,7 @@ import build.music.mcp.ExportOptions;
 import build.music.mcp.ToolResult;
 import build.music.midi.MidiRenderer;
 import build.music.midi.MidiWriter;
+import build.music.musicxml.MusicXmlRenderer;
 import build.music.score.Score;
 
 import java.io.IOException;
@@ -218,6 +219,41 @@ public final class ExportTools {
             return ToolResult.error("MIDI render failed: " + e.getMessage());
         } catch (final IOException e) {
             return ToolResult.error("Export failed: " + e.getMessage());
+        }
+    }
+
+    public static ToolResult exportMusicXml(final CompositionContext ctx,
+                                             final String filename,
+                                             final ExportOptions options) {
+        if (ctx.voiceNames().isEmpty()) {
+            return ToolResult.error("No voices to export. Create at least one voice first.");
+        }
+        try {
+            final Score score = ctx.buildScore();
+            final String xmlSource = MusicXmlRenderer.render(score);
+            final byte[] xmlBytes = xmlSource.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+            final String baseName = filename != null && !filename.isBlank()
+                ? stripExtension(filename)
+                : sanitizeFilename(score.title());
+            final String outName = baseName + ".musicxml";
+
+            final StringBuilder message = new StringBuilder();
+            if (options.writeToDisk()) {
+                final java.nio.file.Path path = java.nio.file.Path.of(outName);
+                java.nio.file.Files.writeString(path, xmlSource);
+                message.append("MusicXML written to: ").append(path.toAbsolutePath());
+            } else {
+                message.append("MusicXML rendered: ").append(outName);
+            }
+
+            final List<ExportArtifact> artifacts = options.returnBytes()
+                ? List.of(new ExportArtifact(outName, "application/vnd.recordare.musicxml+xml", xmlBytes))
+                : List.of();
+
+            return ToolResult.success(message.toString(), artifacts);
+        } catch (final java.io.IOException e) {
+            return ToolResult.error("Failed to write MusicXML: " + e.getMessage());
         }
     }
 
