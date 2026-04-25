@@ -81,6 +81,7 @@
         <module>music-score</module>
         <module>music-midi</module>
         <module>music-lilypond</module>
+        <module>music-musicxml</module>
         <module>music-demo</module>
         <module>music-harmony</module>
         <module>music-voice</module>
@@ -122,6 +123,11 @@
             <dependency>
                 <groupId>build.music</groupId>
                 <artifactId>music-lilypond</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>build.music</groupId>
+                <artifactId>music-musicxml</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>

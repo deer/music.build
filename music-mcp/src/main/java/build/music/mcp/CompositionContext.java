@@ -52,6 +52,7 @@ public final class CompositionContext {
     private final Map<String, List<NoteEvent>> voices = new LinkedHashMap<>();
     private final Map<String, List<NoteEvent>> motifs = new LinkedHashMap<>();
     private final Map<String, PartAssignment> partAssignments = new LinkedHashMap<>();
+    private final Map<String, PartAssignment> instrumentDefaults = new LinkedHashMap<>();
     private final Map<String, Velocity> voiceDynamics = new LinkedHashMap<>();
     private final Map<String, Articulation> voiceArticulations = new LinkedHashMap<>();
     private final Map<String, List<ArticulationRange>> voiceArticulationRanges = new LinkedHashMap<>();
@@ -103,6 +104,9 @@ public final class CompositionContext {
 
     public void createVoice(final String name, final List<NoteEvent> events) {
         voices.put(name, new ArrayList<>(events));
+        if (!partAssignments.containsKey(name) && instrumentDefaults.containsKey(name)) {
+            partAssignments.put(name, instrumentDefaults.get(name));
+        }
     }
 
     public void appendToVoice(final String name, final List<NoteEvent> events) {
@@ -216,7 +220,9 @@ public final class CompositionContext {
 
     public void assignPart(final String voiceName, final int channel, final int program, final String instrumentName) {
         requireVoice(voiceName);
-        partAssignments.put(voiceName, new PartAssignment(channel, program, instrumentName));
+        final PartAssignment assignment = new PartAssignment(channel, program, instrumentName);
+        partAssignments.put(voiceName, assignment);
+        instrumentDefaults.put(voiceName, assignment);
     }
 
     public Set<Integer> usedChannels() {
@@ -523,8 +529,9 @@ public final class CompositionContext {
 
         for (final Part part : score.scoreParts()) {
             voices.put(part.name(), new ArrayList<>(part.voice().events()));
-            partAssignments.put(part.name(),
-                new PartAssignment(part.midiChannel(), part.midiProgram(), ""));
+            final PartAssignment assignment = new PartAssignment(part.midiChannel(), part.midiProgram(), "");
+            partAssignments.put(part.name(), assignment);
+            instrumentDefaults.put(part.name(), assignment);
         }
 
         if (score.barChords() != null) {
@@ -543,6 +550,7 @@ public final class CompositionContext {
         voices.clear();
         motifs.clear();
         partAssignments.clear();
+        instrumentDefaults.clear();
         voiceDynamics.clear();
         voiceArticulations.clear();
         voiceArticulationRanges.clear();

@@ -68,6 +68,7 @@ public final class MusicMcpTools {
         builder.tool(exportAllTool(provider, exportOptions));
         builder.tool(exportMidiTool(provider, exportOptions));
         builder.tool(exportLilypondTool(provider, exportOptions));
+        builder.tool(exportMusicXmlTool(provider, exportOptions));
         // Harmony tools
         builder.tool(harmonySetKeyTool(provider));
         builder.tool(harmonyChordProgressionTool(provider));
@@ -86,6 +87,12 @@ public final class MusicMcpTools {
         builder.tool(voiceRepeatTool(provider));
         builder.tool(voiceSliceTool(provider));
         builder.tool(voicePadToMeasureTool(provider));
+        // Write-back voice editing
+        builder.tool(voiceTrimTool(provider));
+        builder.tool(voiceSetBarTool(provider));
+        builder.tool(voiceReplaceRangeTool(provider));
+        builder.tool(voiceReplaceNoteTool(provider));
+        builder.tool(voiceMeasureCountTool(provider));
         // Form tools
         builder.tool(formCreateSectionTool(provider));
         builder.tool(formRepeatSectionTool(provider));
@@ -105,6 +112,7 @@ public final class MusicMcpTools {
         // Save / load
         builder.tool(scoreSaveTool(provider));
         builder.tool(scoreLoadTool(provider));
+        builder.tool(scoreLoadMidiTool(provider));
     }
 
     // --- Tool factory methods ---
@@ -429,6 +437,21 @@ public final class MusicMcpTools {
         );
     }
 
+    private static McpTool exportMusicXmlTool(final CompositionContextProvider provider,
+                                               final ExportOptions exportOptions) {
+        return tool(provider,
+            "export.musicxml",
+            "Export the current composition to MusicXML 4.0 (.musicxml). " +
+                "MusicXML is the standard interchange format for notation software — " +
+                "opens in MuseScore, Dorico, Sibelius, Finale, and most DAWs. " +
+                "Filename is optional — defaults to '{title}.musicxml'.",
+            buildObjectSchema(
+                Map.of("filename", strProp("Output base filename without extension (optional)")),
+                List.of()),
+            (ctx, args) -> ExportTools.exportMusicXml(ctx, optStr(args, "filename"), exportOptions)
+        );
+    }
+
     private static McpTool harmonySetKeyTool(final CompositionContextProvider provider) {
         return tool(provider, "harmony.set_key",
             "Set the musical key for the composition. " +
@@ -661,6 +684,69 @@ public final class MusicMcpTools {
                 args.get("start_measure").asInt(), optStr(args, "target_voice")));
     }
 
+    private static McpTool voiceTrimTool(final CompositionContextProvider provider) {
+        return tool(provider, "voice.trim",
+            "Truncate a voice to N bars, discarding everything after. Writes back in place.",
+            McpTools.schema(MAPPER,
+                Map.of("voice", "Name of the voice to trim", "bars", "Number of bars to keep"),
+                List.of("voice", "bars")),
+            (ctx, args) -> VoiceOpTools.trimVoice(ctx, str(args, "voice"), args.get("bars").asInt()));
+    }
+
+    private static McpTool voiceSetBarTool(final CompositionContextProvider provider) {
+        return tool(provider, "voice.set_bar",
+            "Replace a single bar's content with new notes. " +
+                "Uses the same note syntax as voice.create. " +
+                "Useful for fixing a wrong bar without recreating the whole voice.",
+            buildObjectSchema(
+                Map.of("voice", strProp("Voice name"),
+                    "bar", intProp("Bar number to replace (1-based)"),
+                    "notes", strProp("New note sequence for the bar, e.g. 'C4/q D4/q E4/q F4/q'")),
+                List.of("voice", "bar", "notes")),
+            (ctx, args) -> VoiceOpTools.setBar(ctx, str(args, "voice"), args.get("bar").asInt(), str(args, "notes")));
+    }
+
+    private static McpTool voiceReplaceRangeTool(final CompositionContextProvider provider) {
+        return tool(provider, "voice.replace_range",
+            "Replace a range of bars with new notes. " +
+                "from_bar and to_bar are both inclusive. " +
+                "The new notes replace the entire span — they don't have to fill the same number of bars.",
+            buildObjectSchema(
+                Map.of("voice", strProp("Voice name"),
+                    "from_bar", intProp("First bar to replace (1-based, inclusive)"),
+                    "to_bar", intProp("Last bar to replace (1-based, inclusive)"),
+                    "notes", strProp("Replacement note sequence")),
+                List.of("voice", "from_bar", "to_bar", "notes")),
+            (ctx, args) -> VoiceOpTools.replaceRange(ctx, str(args, "voice"),
+                args.get("from_bar").asInt(), args.get("to_bar").asInt(), str(args, "notes")));
+    }
+
+    private static McpTool voiceReplaceNoteTool(final CompositionContextProvider provider) {
+        return tool(provider, "voice.replace_note",
+            "Surgically replace a single note in a bar. " +
+                "Finds the first note in the given bar whose pitch matches 'old', replaces it with 'new'. " +
+                "old and new are full note tokens including duration, e.g. 'C4/q' or 'F#4/e'. " +
+                "Use query.voice to inspect bar content before calling this.",
+            buildObjectSchema(
+                Map.of("voice", strProp("Voice name"),
+                    "bar", intProp("Bar number (1-based)"),
+                    "old", strProp("Note to find by pitch, e.g. 'C4/q'"),
+                    "new", strProp("Replacement note(s), e.g. 'D4/q'")),
+                List.of("voice", "bar", "old", "new")),
+            (ctx, args) -> VoiceOpTools.replaceNote(ctx, str(args, "voice"),
+                args.get("bar").asInt(), str(args, "old"), str(args, "new")));
+    }
+
+    private static McpTool voiceMeasureCountTool(final CompositionContextProvider provider) {
+        return tool(provider, "voice.measure_count",
+            "Return the number of complete bars in a voice. " +
+                "Also shown in voice.list — use this when you only need the count for one voice.",
+            McpTools.schema(MAPPER,
+                Map.of("voice", "Voice name"),
+                List.of("voice")),
+            (ctx, args) -> VoiceOpTools.measureCount(ctx, str(args, "voice")));
+    }
+
     private static McpTool formCreateSectionTool(final CompositionContextProvider provider) {
         return tool(provider, "form.create_section",
             "Create a named section from the current voices (or specified voices). " +
@@ -834,6 +920,20 @@ public final class MusicMcpTools {
                 Map.of("filename", strProp("Filename (without path) to load, e.g. 'my_song' or 'my_song.json'")),
                 List.of("filename")),
             (ctx, args) -> SaveLoadTools.load(ctx, str(args, "filename")));
+    }
+
+    private static McpTool scoreLoadMidiTool(final CompositionContextProvider provider) {
+        return tool(provider, "score.load_midi",
+            "Import a MIDI file as voices into the current composition. " +
+                "Creates one voice per non-empty MIDI track, named 'voice-0', 'voice-1', etc. " +
+                "Also sets the tempo from the MIDI file. " +
+                "Existing voices are not cleared — call score.clear first if you want a fresh start. " +
+                "Note: MIDI loses enharmonic spelling; all black keys come back as sharps (C#, F#, etc.). " +
+                "path can be absolute or relative to the server's working directory.",
+            buildObjectSchema(
+                Map.of("path", strProp("Path to the MIDI file, e.g. 'generated_tracks/1_my_song/my_song.mid'")),
+                List.of("path")),
+            (ctx, args) -> SaveLoadTools.loadMidi(ctx, str(args, "path")));
     }
 
     // --- Tool plumbing ---

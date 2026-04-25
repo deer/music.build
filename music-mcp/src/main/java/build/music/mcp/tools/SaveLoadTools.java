@@ -7,7 +7,9 @@ import build.music.mcp.CompositionContext;
 import build.music.mcp.CompositionSnapshot;
 import build.music.mcp.MusicMarshalling;
 import build.music.mcp.ToolResult;
+import build.music.midi.MidiReader;
 import build.music.pitch.typesystem.MusicCodeModel;
+import build.music.score.Voice;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.StreamReadFeature;
 
@@ -16,6 +18,8 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import javax.sound.midi.InvalidMidiDataException;
 
 /**
  * Tools for saving and loading composition snapshots via codemodel marshalling.
@@ -118,6 +122,34 @@ public final class SaveLoadTools {
 
         } catch (final IOException e) {
             return ToolResult.error("Failed to load snapshot: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Tool: score.load_midi — import a MIDI file as voices into the current context.
+     * Adds one voice per non-empty track. Sets tempo from the MIDI file.
+     * Existing voices are preserved; use score.clear first if you want a fresh start.
+     *
+     * @param path path to the MIDI file (absolute or relative to the working directory)
+     */
+    public static ToolResult loadMidi(final CompositionContext ctx, final String path) {
+        try {
+            final Path midiPath = Path.of(path);
+            if (!Files.exists(midiPath)) {
+                return ToolResult.error("File not found: " + midiPath.toAbsolutePath());
+            }
+            final MidiReader.MidiImport imported = MidiReader.readWithTempo(midiPath);
+            ctx.setTempo(imported.tempo());
+            for (final Voice voice : imported.voices()) {
+                ctx.createVoice(voice.name(), voice.events());
+            }
+            final List<String> names = imported.voices().stream().map(Voice::name).toList();
+            return ToolResult.success(
+                "Loaded " + imported.voices().size() + " voice(s) from " + path +
+                    " at " + imported.tempo().bpm() + " BPM. Voice names: " + names +
+                    ". Notes use sharp spellings — use transform.transpose if re-spelling is needed.");
+        } catch (final IOException | InvalidMidiDataException e) {
+            return ToolResult.error("Failed to load MIDI: " + e.getMessage());
         }
     }
 

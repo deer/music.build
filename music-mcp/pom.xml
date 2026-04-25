@@ -49,6 +49,10 @@
         </dependency>
         <dependency>
             <groupId>build.music</groupId>
+            <artifactId>music-musicxml</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>build.music</groupId>
             <artifactId>music-harmony</artifactId>
         </dependency>
         <dependency>
