@@ -275,7 +275,7 @@ public final class MusicXmlRenderer {
     // --- Measure splitting ---
 
     private static List<List<NoteEvent>> splitIntoMeasures(final List<NoteEvent> events,
-                                                            final Fraction measureDur) {
+                                                           final Fraction measureDur) {
         final List<List<NoteEvent>> result = new ArrayList<>();
         List<NoteEvent> current = new ArrayList<>();
         Fraction accumulated = Fraction.ZERO;
@@ -301,8 +301,8 @@ public final class MusicXmlRenderer {
     // --- XML helper ---
 
     private static void elem(final XMLStreamWriter xml,
-                              final String tag,
-                              final String text) throws XMLStreamException {
+                             final String tag,
+                             final String text) throws XMLStreamException {
         xml.writeStartElement(tag);
         xml.writeCharacters(text);
         xml.writeEndElement();
