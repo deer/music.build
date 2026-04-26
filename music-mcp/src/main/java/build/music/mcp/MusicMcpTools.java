@@ -553,12 +553,16 @@ public final class MusicMcpTools {
                 Map.of(
                     "target_voice", strProp("Name for the bass voice (default: 'bass')"),
                     "octave", intProp("Bass octave (default: 2 — C2 to B2 range)"),
-                    "bars", intProp("Number of bars (default: use all defined chords)")
+                    "bars", intProp("Number of bars (default: use all defined chords)"),
+                    "velocity", strProp("Velocity/dynamics: ppp, pp, p, mp, mf (default), f, ff, fff"),
+                    "approach", strProp("Approach note style: chromatic (default, 1–2 semitones below), diatonic (scale step below), none (use chord root)")
                 ),
                 List.of()),
             (ctx, args) -> HarmonyTools.walkingBass(ctx, optStr(args, "target_voice"),
                 args.has("octave") ? args.get("octave").asInt() : 2,
-                args.has("bars") ? args.get("bars").asInt() : null));
+                args.has("bars") ? args.get("bars").asInt() : null,
+                optStr(args, "velocity"),
+                optStr(args, "approach")));
     }
 
     private static McpTool harmonyCompTool(final CompositionContextProvider provider) {
@@ -577,13 +581,15 @@ public final class MusicMcpTools {
                     "target_voice", strProp("Name for the comping voice (default: 'comp')"),
                     "octave", intProp("Voicing octave (default: 3 — mid-range)"),
                     "style", strProp("Comping style: quarter_stabs, on_beat, eighth_pump, shell_voicings, charleston (default: quarter_stabs)"),
-                    "bars", intProp("Number of bars (default: use all defined chords)")
+                    "bars", intProp("Number of bars (default: use all defined chords)"),
+                    "velocity", strProp("Velocity/dynamics: ppp, pp, p, mp, mf (default), f, ff, fff")
                 ),
                 List.of()),
             (ctx, args) -> HarmonyTools.comp(ctx, optStr(args, "target_voice"),
                 args.has("octave") ? args.get("octave").asInt() : 3,
                 optStr(args, "style"),
-                args.has("bars") ? args.get("bars").asInt() : null));
+                args.has("bars") ? args.get("bars").asInt() : null,
+                optStr(args, "velocity")));
     }
 
     private static McpTool voiceSetDynamicsTool(final CompositionContextProvider provider) {
@@ -751,14 +757,16 @@ public final class MusicMcpTools {
         return tool(provider, "form.create_section",
             "Create a named section from the current voices (or specified voices). " +
                 "Sections are the building blocks of formal plans: A, B, Verse, Chorus, etc. " +
+                "measures is optional — if omitted, inferred from the longest provided voice. " +
+                "Explicit measures overrides inference; a warning is returned if they disagree. " +
                 "voice_names: optional comma-separated list; uses all voices if omitted.",
             buildObjectSchema(
                 Map.of("name", strProp("Section name, e.g. 'A', 'B', 'Verse', 'Chorus'"),
-                    "measures", intProp("How many measures this section spans"),
+                    "measures", intProp("How many measures this section spans (optional — inferred from voices if omitted)"),
                     "voice_names", strProp("Comma-separated voice names (optional, defaults to all)")),
-                List.of("name", "measures")),
+                List.of("name")),
             (ctx, args) -> FormTools.createSection(ctx, str(args, "name"),
-                optStr(args, "voice_names"), args.get("measures").asInt()));
+                optStr(args, "voice_names"), optInt(args, "measures")));
     }
 
     private static McpTool formRepeatSectionTool(final CompositionContextProvider provider) {

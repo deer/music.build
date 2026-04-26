@@ -67,15 +67,21 @@ public final class Harmonizer {
      * 2/4 — root, approach
      * other — root, then (beats−1) fifths, each of beat-unit duration
      *
-     * @param chords resolved chord symbols, one per bar
-     * @param key    the key context (for scale-tone approach notes)
-     * @param octave bass octave (2 is typical: C2–B2 range)
-     * @param ts     time signature determining beats per bar
+     * @param chords        resolved chord symbols, one per bar
+     * @param key           the key context (for scale-tone approach notes)
+     * @param octave        bass octave (2 is typical: C2–B2 range)
+     * @param ts            time signature determining beats per bar
+     * @param velocity      note velocity (null = MF)
+     * @param approachStyle approach note style: "chromatic" (default, scale-tone 1–2 semitones below),
+     *                      "diatonic" (one scale step below), "none" (use root of current chord)
      * @return list of NoteEvents, one bar's worth of notes per chord
      */
     public static List<NoteEvent> walkingBass(
-        final List<ChordSymbol> chords, final Key key, final int octave, final TimeSignature ts) {
+        final List<ChordSymbol> chords, final Key key, final int octave, final TimeSignature ts,
+        final Velocity velocity, final String approachStyle) {
         final Scale scale = key.scale();
+        final Velocity vel = velocity != null ? velocity : Velocity.MF;
+        final String approach = approachStyle != null ? approachStyle.toLowerCase() : "chromatic";
         final List<NoteEvent> result = new ArrayList<>();
 
         for (int i = 0; i < chords.size(); i++) {
@@ -84,51 +90,57 @@ public final class Harmonizer {
             final SpelledPitch fifth = tones.size() >= 3 ? tones.get(2) : tones.get(0);
             final SpelledPitch third = tones.size() >= 2 ? tones.get(1) : tones.get(0);
 
-            final SpelledPitch approach;
-            if (i < chords.size() - 1) {
-                final SpelledPitch nextRoot = chords.get(i + 1).toPitches(octave).get(0);
-                approach = findApproachBelow(scale, nextRoot, octave);
+            final SpelledPitch approachNote;
+            if ("none".equals(approach) || i >= chords.size() - 1) {
+                approachNote = root;
             } else {
-                approach = root;
+                final SpelledPitch nextRoot = chords.get(i + 1).toPitches(octave).get(0);
+                approachNote = switch (approach) {
+                    case "diatonic" -> findDiatonicApproachBelow(scale, nextRoot, octave);
+                    default -> findApproachBelow(scale, nextRoot, octave);
+                };
             }
 
             final int beats = ts.beats();
             final int beatUnit = ts.beatUnit();
 
             if (beats == 4 && beatUnit == 4) {
-                // 4/4: root, fifth, third, approach
                 final Duration q = RhythmicValue.QUARTER;
-                result.add(Note.of(root, q, Velocity.MF, Articulation.NORMAL, false));
-                result.add(Note.of(fifth, q, Velocity.MF, Articulation.NORMAL, false));
-                result.add(Note.of(third, q, Velocity.MF, Articulation.NORMAL, false));
-                result.add(Note.of(approach, q, Velocity.MF, Articulation.NORMAL, false));
+                result.add(Note.of(root, q, vel, Articulation.NORMAL, false));
+                result.add(Note.of(fifth, q, vel, Articulation.NORMAL, false));
+                result.add(Note.of(third, q, vel, Articulation.NORMAL, false));
+                result.add(Note.of(approachNote, q, vel, Articulation.NORMAL, false));
             } else if (beats == 3 && beatUnit == 4) {
-                // 3/4: root, fifth, fifth
                 final Duration q = RhythmicValue.QUARTER;
-                result.add(Note.of(root, q, Velocity.MF, Articulation.NORMAL, false));
-                result.add(Note.of(fifth, q, Velocity.MF, Articulation.NORMAL, false));
-                result.add(Note.of(fifth, q, Velocity.MF, Articulation.NORMAL, false));
+                result.add(Note.of(root, q, vel, Articulation.NORMAL, false));
+                result.add(Note.of(fifth, q, vel, Articulation.NORMAL, false));
+                result.add(Note.of(fifth, q, vel, Articulation.NORMAL, false));
             } else if (beats == 6 && beatUnit == 8) {
-                // 6/8: root (dotted-quarter), fifth (dotted-quarter)
                 final Duration dq = new DottedValue(RhythmicValue.QUARTER, 1);
-                result.add(Note.of(root, dq, Velocity.MF, Articulation.NORMAL, false));
-                result.add(Note.of(fifth, dq, Velocity.MF, Articulation.NORMAL, false));
+                result.add(Note.of(root, dq, vel, Articulation.NORMAL, false));
+                result.add(Note.of(fifth, dq, vel, Articulation.NORMAL, false));
             } else if (beats == 2 && beatUnit == 4) {
-                // 2/4: root, approach
                 final Duration q = RhythmicValue.QUARTER;
-                result.add(Note.of(root, q, Velocity.MF, Articulation.NORMAL, false));
-                result.add(Note.of(approach, q, Velocity.MF, Articulation.NORMAL, false));
+                result.add(Note.of(root, q, vel, Articulation.NORMAL, false));
+                result.add(Note.of(approachNote, q, vel, Articulation.NORMAL, false));
             } else {
-                // fallback: root + (beats−1) fifths, each of beat-unit duration
                 final Duration bd = beatDuration(beatUnit);
-                result.add(Note.of(root, bd, Velocity.MF, Articulation.NORMAL, false));
+                result.add(Note.of(root, bd, vel, Articulation.NORMAL, false));
                 for (int b = 1; b < beats; b++) {
-                    result.add(Note.of(fifth, bd, Velocity.MF, Articulation.NORMAL, false));
+                    result.add(Note.of(fifth, bd, vel, Articulation.NORMAL, false));
                 }
             }
         }
 
         return List.copyOf(result);
+    }
+
+    /**
+     * Convenience overload with default velocity and approach style.
+     */
+    public static List<NoteEvent> walkingBass(
+        final List<ChordSymbol> chords, final Key key, final int octave, final TimeSignature ts) {
+        return walkingBass(chords, key, octave, ts, null, "chromatic");
     }
 
     private static Duration beatDuration(final int beatUnit) {
@@ -140,6 +152,29 @@ public final class Harmonizer {
             case 16 -> RhythmicValue.SIXTEENTH;
             default -> RhythmicValue.QUARTER;
         };
+    }
+
+    /**
+     * Find the scale pitch that is exactly one diatonic step below targetPitch.
+     * Falls back to chromatic approach if no diatonic step is found.
+     */
+    private static SpelledPitch findDiatonicApproachBelow(final Scale scale, final SpelledPitch targetPitch,
+                                                          final int octave) {
+        final int targetMidi = targetPitch.midi();
+        SpelledPitch best = null;
+        int bestDist = Integer.MAX_VALUE;
+
+        for (int oct = octave - 1; oct <= octave; oct++) {
+            for (final SpelledPitch p : scale.pitches(oct)) {
+                final int dist = targetMidi - p.midi();
+                if (dist > 0 && dist < bestDist) {
+                    bestDist = dist;
+                    best = p;
+                }
+            }
+        }
+
+        return best != null ? best : findApproachBelow(scale, targetPitch, octave);
     }
 
     /**
@@ -174,26 +209,38 @@ public final class Harmonizer {
      * "on_beat"         — block chord on every beat
      * "eighth_pump"     — block chord on every eighth note
      * "shell_voicings"  — root + 7th (shell) on off-beats
-     * "charleston"      — dotted quarter + eighth + quarter + rest (4/4 only; warning in other meters)
+     * "charleston"      — dotted quarter + eighth + quarter + rest (4/4 only; graceful fallback in other meters)
      *
-     * @param chords resolved chord symbols, one per bar
-     * @param octave voicing octave (e.g. 3 for mid-range Rhodes comping)
-     * @param style  comping style name
-     * @param ts     time signature determining beats per bar
+     * @param chords   resolved chord symbols, one per bar
+     * @param octave   voicing octave (e.g. 3 for mid-range Rhodes comping)
+     * @param style    comping style name
+     * @param ts       time signature determining beats per bar
+     * @param velocity note velocity (null = MF)
      * @return list of NoteEvents (Chord and Rest objects)
      */
     public static List<NoteEvent> comp(
-        final List<ChordSymbol> chords, final int octave, final String style, final TimeSignature ts) {
+        final List<ChordSymbol> chords, final int octave, final String style, final TimeSignature ts,
+        final Velocity velocity) {
+        final Velocity vel = velocity != null ? velocity : Velocity.MF;
         final List<NoteEvent> result = new ArrayList<>();
         for (final ChordSymbol chord : chords) {
-            result.addAll(compBar(chord, octave, style, ts));
+            result.addAll(compBar(chord, octave, style, ts, vel));
         }
         return List.copyOf(result);
     }
 
+    /**
+     * Convenience overload with default velocity.
+     */
+    public static List<NoteEvent> comp(
+        final List<ChordSymbol> chords, final int octave, final String style, final TimeSignature ts) {
+        return comp(chords, octave, style, ts, null);
+    }
+
     @SuppressWarnings("unchecked")
     private static List<NoteEvent> compBar(
-        final ChordSymbol chord, final int octave, final String style, final TimeSignature ts) {
+        final ChordSymbol chord, final int octave, final String style, final TimeSignature ts,
+        final Velocity vel) {
         final List<SpelledPitch> spelled = chord.toPitches(octave);
         final List<build.music.pitch.Pitch> tones = (List<build.music.pitch.Pitch>) (List<?>) spelled;
         final List<build.music.pitch.Pitch> shellTones = spelled.size() >= 4
@@ -212,69 +259,69 @@ public final class Harmonizer {
 
         // 6/8: two dotted-quarter pulses per bar
         if (beats == 6 && beatUnit == 8) {
-            final Chord fullDQ = Chord.of(tones, dq, Velocity.MF);
-            final Chord shellDQ = Chord.of(shellTones, dq, Velocity.MF);
+            final Chord fullDQ = Chord.of(tones, dq, vel);
+            final Chord shellDQ = Chord.of(shellTones, dq, vel);
             return switch (styleKey) {
                 case "quarter_stabs", "shell_voicings" -> List.of(rdq, shellDQ);
                 case "on_beat" -> List.of(fullDQ, fullDQ);
                 case "eighth_pump" -> {
-                    final var pump = Chord.of(tones, e, Velocity.MF);
+                    final var pump = Chord.of(tones, e, vel);
                     yield List.of(pump, pump, pump, pump, pump, pump);
                 }
-                case "charleston" -> List.of(fullDQ, fullDQ); // graceful fallback
+                case "charleston" -> List.of(fullDQ, fullDQ);
                 default -> throw new IllegalArgumentException(unknownStyleMsg(style));
             };
         }
 
         // 3/4: three quarter-note beats per bar
         if (beats == 3 && beatUnit == 4) {
-            final Chord full = Chord.of(tones, q, Velocity.MF);
-            final Chord shell = Chord.of(shellTones, q, Velocity.MF);
+            final Chord full = Chord.of(tones, q, vel);
+            final Chord shell = Chord.of(shellTones, q, vel);
             return switch (styleKey) {
                 case "quarter_stabs" -> List.of(rq, full, full);
                 case "on_beat" -> List.of(full, full, full);
                 case "eighth_pump" -> {
-                    final var pump = Chord.of(tones, e, Velocity.MF);
+                    final var pump = Chord.of(tones, e, vel);
                     yield List.of(pump, pump, pump, pump, pump, pump);
                 }
                 case "shell_voicings" -> List.of(rq, shell, shell);
-                case "charleston" -> List.of(rq, full, full); // graceful fallback
+                case "charleston" -> List.of(rq, full, full);
                 default -> throw new IllegalArgumentException(unknownStyleMsg(style));
             };
         }
 
         // 2/4: two quarter-note beats per bar
         if (beats == 2 && beatUnit == 4) {
-            final Chord full = Chord.of(tones, q, Velocity.MF);
-            final Chord shell = Chord.of(shellTones, q, Velocity.MF);
+            final Chord full = Chord.of(tones, q, vel);
+            final Chord shell = Chord.of(shellTones, q, vel);
             return switch (styleKey) {
                 case "quarter_stabs", "shell_voicings" -> List.of(rq, shell);
                 case "on_beat" -> List.of(full, full);
                 case "eighth_pump" -> {
-                    final var pump = Chord.of(tones, e, Velocity.MF);
+                    final var pump = Chord.of(tones, e, vel);
                     yield List.of(pump, pump, pump, pump);
                 }
-                case "charleston" -> List.of(rq, full); // graceful fallback
+                case "charleston" -> List.of(rq, full);
                 default -> throw new IllegalArgumentException(unknownStyleMsg(style));
             };
         }
 
-        // 4/4 (and fallback for other simple meters): original patterns
-        final Chord full = Chord.of(tones, q, Velocity.MF);
-        final Chord shell = Chord.of(shellTones, q, Velocity.MF);
+        // 4/4 (and fallback for other simple meters)
+        final Chord full = Chord.of(tones, q, vel);
+        final Chord shell = Chord.of(shellTones, q, vel);
         return switch (styleKey) {
             case "quarter_stabs" -> List.of(rq, full, rq, full);
             case "on_beat" -> List.of(full, full, full, full);
             case "eighth_pump" -> List.of(
-                Chord.of(tones, e, Velocity.MF), Chord.of(tones, e, Velocity.MF),
-                Chord.of(tones, e, Velocity.MF), Chord.of(tones, e, Velocity.MF),
-                Chord.of(tones, e, Velocity.MF), Chord.of(tones, e, Velocity.MF),
-                Chord.of(tones, e, Velocity.MF), Chord.of(tones, e, Velocity.MF));
+                Chord.of(tones, e, vel), Chord.of(tones, e, vel),
+                Chord.of(tones, e, vel), Chord.of(tones, e, vel),
+                Chord.of(tones, e, vel), Chord.of(tones, e, vel),
+                Chord.of(tones, e, vel), Chord.of(tones, e, vel));
             case "shell_voicings" -> List.of(rq, shell, rq, shell);
             case "charleston" -> List.of(
-                Chord.of(tones, dq, Velocity.MF),
-                Chord.of(tones, e, Velocity.MF),
-                Chord.of(tones, q, Velocity.MF),
+                Chord.of(tones, dq, vel),
+                Chord.of(tones, e, vel),
+                Chord.of(tones, q, vel),
                 Rest.of(q));
             default -> throw new IllegalArgumentException(unknownStyleMsg(style));
         };

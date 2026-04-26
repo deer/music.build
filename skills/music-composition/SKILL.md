@@ -128,8 +128,8 @@ C4/q~stac D4/q~stac r/e E4/e F4/q  # staccato melody
 - `harmony.chord_progression` — set a Roman-numeral progression, e.g. "I IV V I", "ii V I", "I V vi IV"
 - `harmony.set_bars` — declare per-bar chord changes as concrete chord symbols: `"1:Cm7 2:F7 3:Bbmaj7 4:Eb"`
 - `harmony.harmonize` — generate a chord-root voice from the current key + progression (`target_voice`, optional `octave`)
-- `harmony.walking_bass` — generate a walking bass line over chords; adapts to time signature: 4/4 = root-fifth-third-approach, 3/4 = root-fifth-fifth, 6/8 = root-fifth (dotted-quarters), 2/4 = root-approach. Uses `harmony.set_bars` if set, else falls back to progression.
-- `harmony.comp` — generate a comping (chord accompaniment) voice; adapts to time signature. Style options: `quarter_stabs` (default), `on_beat`, `eighth_pump`, `shell_voicings`, `charleston` (4/4 only)
+- `harmony.walking_bass` — generate a walking bass line over chords; adapts to time signature: 4/4 = root-fifth-third-approach, 3/4 = root-fifth-fifth, 6/8 = root-fifth (dotted-quarters), 2/4 = root-approach. Uses `harmony.set_bars` if set, else falls back to progression. Optional: `velocity` (ppp–fff, default mf), `approach` (chromatic [default, 1–2 semitones below], diatonic [scale step below], none [use chord root])
+- `harmony.comp` — generate a comping (chord accompaniment) voice; adapts to time signature. Style options: `quarter_stabs` (default), `on_beat`, `eighth_pump`, `shell_voicings`, `charleston` (4/4 only). Optional: `velocity` (ppp–fff, default mf)
 - `harmony.suggest_harmony` — suggest chord harmonizations measure-by-measure for a given voice (advisory)
 - `harmony.detect_key` — Advanced: run pitch-class analysis on a voice and report the most likely key
 - `harmony.diatonic_transpose` — transpose a voice by N diatonic scale steps within the current key
@@ -149,7 +149,7 @@ C4/q~stac D4/q~stac r/e E4/e F4/q  # staccato melody
 - `instrument.info` — get written range, comfortable range, MIDI program, clef, and articulations for a named instrument
 
 ### Form
-- `form.create_section` — capture the current voices (or a subset) as a named section with a measure count
+- `form.create_section` — capture the current voices (or a subset) as a named section. `measures` is optional — inferred from the longest voice if omitted; a warning is added if explicit `measures` differs from the inferred count.
 - `form.repeat_section` — append a repeat of a previously defined section (optionally with a new label)
 - `form.set_ending` — attach a 1st/2nd volta ending to a section: `section` (the repeated section), `pass` (1 or 2), `ending_section` (a separately created section with the alternate tail bars). LilyPond renders `\repeat volta` + `\alternative` blocks; MIDI plays the correct ending per pass.
 - `form.build` — assemble sections into a full score; replaces per-section voices with the full assembled versions
@@ -184,21 +184,55 @@ C4/q~stac D4/q~stac r/e E4/e F4/q  # staccato melody
 
 **Drums:** `drums` — automatically assigned to MIDI channel 9 (GM percussion). Notes in the voice are treated as GM drum sound numbers. Use the note names below to select sounds:
 
-| Note | MIDI | GM Drum Sound       | Use                        |
-|------|------|---------------------|----------------------------|
-| C2   | 36   | Bass Drum 1         | four-on-the-floor kick     |
-| C#2  | 37   | Side Stick          | rim shot                   |
-| D2   | 38   | Snare Drum 1        | snare / backbeat           |
-| Eb2  | 39   | Hand Clap           | clap on 2 & 4              |
-| F#2  | 42   | Closed Hi-Hat       | 8th-note groove            |
-| Ab2  | 44   | Pedal Hi-Hat        | open 16th feel             |
-| Bb2  | 46   | Open Hi-Hat         | accent on the "and"        |
-| C#3  | 49   | Crash Cymbal 1      | section transitions        |
-| Eb3  | 51   | Ride Cymbal 1       | ride groove                |
-| Bb2  | 46   | Open Hi-Hat         | breathable "and" accent    |
-| D#4  | 63   | Open Hi Conga       | Afrobeats hand percussion  |
-| E4   | 64   | Low Conga           | Afrobeats hand percussion  |
-| Bb4  | 70   | Maracas             | 16th/8th texture layer     |
+| Note | MIDI | GM Drum Sound        | Use                           |
+|------|------|----------------------|-------------------------------|
+| B1   | 35   | Acoustic Bass Drum   | deep kick variant             |
+| C2   | 36   | Bass Drum 1          | four-on-the-floor kick        |
+| C#2  | 37   | Side Stick           | rim shot                      |
+| D2   | 38   | Acoustic Snare       | snare / backbeat              |
+| Eb2  | 39   | Hand Clap            | clap on 2 & 4                 |
+| E2   | 40   | Electric Snare       | tighter snare sound           |
+| F2   | 41   | Low Floor Tom        | floor tom low                 |
+| F#2  | 42   | Closed Hi-Hat        | 8th-note groove               |
+| G2   | 43   | High Floor Tom       | floor tom high                |
+| Ab2  | 44   | Pedal Hi-Hat         | foot hi-hat                   |
+| A2   | 45   | Low Tom              | tom fill                      |
+| Bb2  | 46   | Open Hi-Hat          | accent on the "and"           |
+| B2   | 47   | Low-Mid Tom          | tom fill                      |
+| C3   | 48   | Hi-Mid Tom           | tom fill                      |
+| C#3  | 49   | Crash Cymbal 1       | section transitions           |
+| D3   | 50   | High Tom             | highest tom                   |
+| Eb3  | 51   | Ride Cymbal 1        | ride groove                   |
+| E3   | 52   | Chinese Cymbal       | aggressive accent             |
+| F3   | 53   | Ride Bell            | ride bell ping                |
+| F#3  | 54   | Tambourine           | 8th/16th texture              |
+| G3   | 55   | Splash Cymbal        | quick accent                  |
+| Ab3  | 56   | Cowbell              | funk/disco accent             |
+| A3   | 57   | Crash Cymbal 2       | second crash                  |
+| Bb3  | 58   | Vibraslap            | Latin accent                  |
+| B3   | 59   | Ride Cymbal 2        | second ride                   |
+| C4   | 60   | Hi Bongo             | Latin/Afro hand percussion    |
+| C#4  | 61   | Low Bongo            | Latin/Afro hand percussion    |
+| D4   | 62   | Mute Hi Conga        | Afrohouse/Latin percussion    |
+| D#4  | 63   | Open Hi Conga        | Afrobeats hand percussion     |
+| E4   | 64   | Low Conga            | Afrobeats hand percussion     |
+| F4   | 65   | High Timbale         | Latin percussion              |
+| F#4  | 66   | Low Timbale          | Latin percussion              |
+| G4   | 67   | High Agogo           | Latin bell tone               |
+| Ab4  | 68   | Low Agogo            | Latin bell tone               |
+| A4   | 69   | Cabasa               | 16th-note shaker texture      |
+| Bb4  | 70   | Maracas              | 16th/8th texture layer        |
+| B4   | 71   | Short Whistle        | novelty/accents               |
+| C5   | 72   | Long Whistle         | novelty/accents               |
+| C#5  | 73   | Short Guiro          | Latin scrape short            |
+| D5   | 74   | Long Guiro           | Latin scrape long             |
+| Eb5  | 75   | Claves               | tresillo / clave pattern      |
+| E5   | 76   | Hi Wood Block        | percussive click high         |
+| F5   | 77   | Low Wood Block       | percussive click low          |
+| F#5  | 78   | Mute Cuica           | Brazilian cuica               |
+| G5   | 79   | Open Cuica           | Brazilian cuica               |
+| Ab5  | 80   | Mute Triangle        | delicate accent               |
+| A5   | 81   | Open Triangle        | bright delicate accent        |
 
 **Drum preset shortcut — instead of building patterns manually, use `drums.preset`:**
 ```

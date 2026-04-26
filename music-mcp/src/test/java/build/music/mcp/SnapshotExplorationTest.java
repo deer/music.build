@@ -67,12 +67,12 @@ class SnapshotExplorationTest {
             TransformTools.saveMotif(ctx, "melody", "cell", 0, 4);
 
             // ── Walking bass auto-generated from bar chords ───────────────────
-            HarmonyTools.walkingBass(ctx, "bass", 2, 8);
+            HarmonyTools.walkingBass(ctx, "bass", 2, 8, null, null);
             VoiceTools.setDynamics(ctx, "bass", "f");
             ScoreTools.assignInstrument(ctx, "bass", "electric_bass");
 
             // ── Charleston comp on Rhodes ─────────────────────────────────────
-            HarmonyTools.comp(ctx, "comp", 3, "charleston", 8);
+            HarmonyTools.comp(ctx, "comp", 3, "charleston", 8, null);
             VoiceTools.setDynamics(ctx, "comp", "mp");
             ScoreTools.assignInstrument(ctx, "comp", "rhodes");
 
@@ -107,11 +107,11 @@ class SnapshotExplorationTest {
             VoiceTools.setDynamics(ctx, "melody", "f");
             ScoreTools.assignInstrument(ctx, "melody", "piano");
 
-            HarmonyTools.walkingBass(ctx, "bass", 2, 8);
+            HarmonyTools.walkingBass(ctx, "bass", 2, 8, null, null);
             VoiceTools.setDynamics(ctx, "bass", "f");
             ScoreTools.assignInstrument(ctx, "bass", "electric_bass");
 
-            HarmonyTools.comp(ctx, "comp", 3, "shell_voicings", 8);
+            HarmonyTools.comp(ctx, "comp", 3, "shell_voicings", 8, null);
             VoiceTools.setDynamics(ctx, "comp", "mp");
             ScoreTools.assignInstrument(ctx, "comp", "rhodes");
 
