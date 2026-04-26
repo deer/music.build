@@ -56,7 +56,7 @@
         <codemodel.version>0.21.1</codemodel.version>
         <jackson.version>2.21.2</jackson.version>
         <junit.version>6.0.3</junit.version>
-        <serve.version>0.3.0</serve.version>
+        <serve.version>0.3.1</serve.version>
 
         <!-- Plugin Versions -->
         <build-helper-plugin.version>3.6.0</build-helper-plugin.version>
