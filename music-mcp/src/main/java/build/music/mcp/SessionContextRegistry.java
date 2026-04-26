@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>Reads {@link McpServer#SESSION_ID} from the current ScopedValue binding on each {@link #get()} call.
  * Sessions idle for more than {@value #IDLE_EVICT_MINUTES} minutes are evicted by a background daemon thread.
  *
- * <p>Use this in hosted deployments ({@code mcp.music.build}) where multiple agents connect concurrently.
+ * <p>Use this in hosted deployments where multiple agents connect concurrently.
  * The local single-user server ({build.music.server.MusicMcpServer}) uses the simpler
  * {@code () -> singletonContext} provider and does not need this class.
  */
