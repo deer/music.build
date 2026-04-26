@@ -2,6 +2,7 @@ package build.music.mcp.tools;
 
 import build.music.core.ChordSymbol;
 import build.music.core.NoteEvent;
+import build.music.core.Velocity;
 import build.music.harmony.ChordProgression;
 import build.music.harmony.DiatonicTranspose;
 import build.music.harmony.HarmonicAnalyzer;
@@ -157,16 +158,19 @@ public final class HarmonyTools {
     }
 
     /**
-     * Tool: harmony.walking_bass — generate a 4/4 walking bass line over chord changes.
+     * Tool: harmony.walking_bass — generate a walking bass line over chord changes.
      * Produces a pattern of root-fifth-third-approach per bar.
      * Requires either harmony.set_bars (preferred) or harmony.set_key + harmony.chord_progression.
      *
-     * @param targetVoice name for the generated bass voice (default "bass")
-     * @param octave      octave for bass notes (default 2, i.e. C2–B2 range)
-     * @param bars        number of bars (default = number of chords defined)
+     * @param targetVoice  name for the generated bass voice (default "bass")
+     * @param octave       octave for bass notes (default 2, i.e. C2–B2 range)
+     * @param bars         number of bars (default = number of chords defined)
+     * @param velocity     dynamics name (ppp/pp/p/mp/mf/f/ff/fff, default mf)
+     * @param approachStyle approach note style: chromatic (default), diatonic, none
      */
     public static ToolResult walkingBass(
-        final CompositionContext ctx, final String targetVoice, final int octave, final Integer bars) {
+        final CompositionContext ctx, final String targetVoice, final int octave, final Integer bars,
+        final String velocity, final String approachStyle) {
         try {
             List<ChordSymbol> chords;
 
@@ -198,7 +202,9 @@ public final class HarmonyTools {
                     "No key set. Walking bass approach notes require a key. Use harmony.set_key first.");
             }
 
-            final List<NoteEvent> bassLine = Harmonizer.walkingBass(chords, ctx.getKey(), octave, ctx.getTimeSignature());
+            final Velocity vel = parseVelocity(velocity);
+            final List<NoteEvent> bassLine = Harmonizer.walkingBass(
+                chords, ctx.getKey(), octave, ctx.getTimeSignature(), vel, approachStyle);
             final String target = targetVoice != null && !targetVoice.isBlank() ? targetVoice : "bass";
             ctx.createVoice(target, bassLine);
             return ToolResult.success(
@@ -226,7 +232,8 @@ public final class HarmonyTools {
      * @param bars        number of bars (default = number of chords defined)
      */
     public static ToolResult comp(
-        final CompositionContext ctx, final String targetVoice, final int octave, final String style, final Integer bars) {
+        final CompositionContext ctx, final String targetVoice, final int octave, final String style,
+        final Integer bars, final String velocity) {
         try {
             List<ChordSymbol> chords;
 
@@ -253,7 +260,8 @@ public final class HarmonyTools {
             }
 
             final String compStyle = style != null && !style.isBlank() ? style : "quarter_stabs";
-            final List<NoteEvent> compVoice = Harmonizer.comp(chords, octave, compStyle, ctx.getTimeSignature());
+            final Velocity vel = parseVelocity(velocity);
+            final List<NoteEvent> compVoice = Harmonizer.comp(chords, octave, compStyle, ctx.getTimeSignature(), vel);
             final String target = targetVoice != null && !targetVoice.isBlank() ? targetVoice : "comp";
             ctx.createVoice(target, compVoice);
             return ToolResult.success(
@@ -263,6 +271,23 @@ public final class HarmonyTools {
         } catch (final IllegalArgumentException e) {
             return ToolResult.error(e.getMessage());
         }
+    }
+
+    private static Velocity parseVelocity(final String velocityStr) {
+        if (velocityStr == null || velocityStr.isBlank()) {
+            return null;
+        }
+        return switch (velocityStr.trim().toLowerCase()) {
+            case "ppp" -> Velocity.PPP;
+            case "pp" -> Velocity.PP;
+            case "p" -> Velocity.P;
+            case "mp" -> Velocity.MP;
+            case "mf" -> Velocity.MF;
+            case "f" -> Velocity.F;
+            case "ff" -> Velocity.FF;
+            case "fff" -> Velocity.FFF;
+            default -> Velocity.of(Integer.parseInt(velocityStr.trim()));
+        };
     }
 
     /**

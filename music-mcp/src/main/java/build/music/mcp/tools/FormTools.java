@@ -9,6 +9,7 @@ import build.music.mcp.ToolResult;
 import build.music.score.Score;
 import build.music.score.Voice;
 import build.music.time.TimeSignature;
+import build.music.voice.VoiceOperations;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -25,15 +26,15 @@ public final class FormTools {
     /**
      * Tool: form.create_section — create a named section.
      * If voiceNames is null, uses all existing voices.
+     * If measures is null, infers from the longest provided voice.
      */
     public static ToolResult createSection(final CompositionContext ctx, final String sectionName,
-                                           final String voiceNames, final int measures) {
+                                           final String voiceNames, final Integer measures) {
         try {
             final TimeSignature ts = ctx.getTimeSignature();
 
             final Map<String, Voice> sectionVoices = new HashMap<>();
             if (voiceNames == null || voiceNames.isBlank()) {
-                // Use all voices
                 for (final String name : ctx.voiceNames()) {
                     sectionVoices.put(name, Voice.of(name, ctx.getVoice(name)));
                 }
@@ -50,21 +51,36 @@ public final class FormTools {
                 return ToolResult.error("No voices found for section. Create voices first.");
             }
 
-            // Init or get form builder
+            final int inferredMeasures = sectionVoices.values().stream()
+                .mapToInt(v -> VoiceOperations.measureCount(v, ts))
+                .max()
+                .orElse(0);
+
+            if (measures == null && inferredMeasures == 0) {
+                return ToolResult.error(
+                    "Cannot infer measure count: all voices are empty. Provide measures explicitly.");
+            }
+
+            final int actualMeasures = measures != null ? measures : inferredMeasures;
+
+            String warning = "";
+            if (measures != null && inferredMeasures > 0 && measures != inferredMeasures) {
+                warning = " (Note: explicit measures=" + measures + " differs from inferred " +
+                    inferredMeasures + " — using explicit value.)";
+            }
+
             if (!ctx.hasFormBuilder()) {
                 ctx.setFormBuilder(FormBuilder.create(ctx.getTitle())
                     .tempo(ctx.getTempo())
                     .timeSignature(ts));
             }
 
-            final Section section = Section.of(sectionName, sectionName, sectionVoices, measures, ts);
+            final Section section = Section.of(sectionName, sectionName, sectionVoices, actualMeasures, ts);
             ctx.getFormBuilder().section(sectionName, section);
-            // Snapshot current bar-chord map for this section so form.build can assemble
-            // an absolute merged chord map across all sections in order.
             ctx.getFormBuilder().setSectionBarChords(sectionName, ctx.getBarChords());
 
             return ToolResult.success("Created section '" + sectionName + "' with " +
-                sectionVoices.size() + " voice(s) over " + measures + " measure(s).");
+                sectionVoices.size() + " voice(s) over " + actualMeasures + " measure(s)." + warning);
         } catch (final IllegalArgumentException e) {
             return ToolResult.error(e.getMessage());
         }
