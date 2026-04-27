@@ -57,7 +57,8 @@ public final class Score
                     final Fraction swingRatio,
                     final Map<Integer, ChordSymbol> barChords,
                     final List<TempoChange> tempoChanges,
-                    final List<StructuredVoice> structuredVoices) {
+                    final List<StructuredVoice> structuredVoices,
+                    final List<SectionMarker> sectionMarkers) {
 
         Objects.requireNonNull(title, "title must not be null");
         Objects.requireNonNull(timeSignature, "timeSignature must not be null");
@@ -71,6 +72,8 @@ public final class Score
             tempoChanges != null ? Collections.unmodifiableList(List.copyOf(tempoChanges)) : List.of();
         final List<StructuredVoice> immutableSV =
             structuredVoices != null ? Collections.unmodifiableList(List.copyOf(structuredVoices)) : List.of();
+        final List<SectionMarker> immutableMarkers =
+            sectionMarkers != null ? Collections.unmodifiableList(List.copyOf(sectionMarkers)) : List.of();
 
         final Score s = new Score(MusicCodeModel.current());
 
@@ -94,6 +97,9 @@ public final class Score
         }
         if (!immutableSV.isEmpty()) {
             s.addTrait(StructuredVoicesTrait.of(immutableSV));
+        }
+        if (!immutableMarkers.isEmpty()) {
+            s.addTrait(SectionMarkersTrait.of(immutableMarkers));
         }
 
         return s;
@@ -138,6 +144,10 @@ public final class Score
         return getTrait(StructuredVoicesTrait.class).map(StructuredVoicesTrait::voices).orElse(List.of());
     }
 
+    public List<SectionMarker> sectionMarkers() {
+        return getTrait(SectionMarkersTrait.class).map(SectionMarkersTrait::markers).orElse(List.of());
+    }
+
     // ── derived ───────────────────────────────────────────────────────────────
 
     public Optional<Part> part(final String name) {
@@ -174,6 +184,7 @@ public final class Score
         private Map<Integer, ChordSymbol> barChords = null;
         private List<TempoChange> tempoChanges = null;
         private List<StructuredVoice> structuredVoices = null;
+        private List<SectionMarker> sectionMarkers = null;
 
         private Builder(final String title) {
             this.title = Objects.requireNonNull(title, "title must not be null");
@@ -214,6 +225,11 @@ public final class Score
             return this;
         }
 
+        public Builder sectionMarkers(final List<SectionMarker> markers) {
+            this.sectionMarkers = markers;
+            return this;
+        }
+
         public Builder part(final Part part) {
             this.parts.add(Objects.requireNonNull(part));
             return this;
@@ -221,7 +237,7 @@ public final class Score
 
         public Score build() {
             return Score.of(title, timeSignature, tempo, parts, key, swingRatio,
-                barChords, tempoChanges, structuredVoices);
+                barChords, tempoChanges, structuredVoices, sectionMarkers);
         }
     }
 }

@@ -408,7 +408,8 @@ For genre-specific scaffolding (Jazz, Bossa Nova, House, Reggae, Blues, Hip-Hop,
 - `form.build` rest-fills missing voices automatically — if "bass" exists in A but not B, B gets whole-note rests.
 - After `form.build`, voices are replaced in-place — no `_form` suffix, no stale originals.
 - `rules.check` is advisory — violations are warnings/suggestions, never blockers. Percussion voices are skipped.
-- Key signature is now reflected in LilyPond output — call `harmony.set_key` before exporting for correct notation.
+- Key signature is reflected in both LilyPond output and the MIDI file (key signature meta event 0x59) — call `harmony.set_key` before exporting for correct notation and DAW display.
+- **MIDI metadata emitted automatically** — no extra steps needed: track names (voice names appear in DAW track headers), key signature (when `harmony.set_key` is set), and section markers (when `form.build` is used — DAW timeline shows "intro", "verse", "chorus" etc. at the correct bar positions).
 - **CC/PC events** are MIDI-only — they are silently skipped in LilyPond and MusicXML export. Don't rely on them for notation; use them purely for MIDI playback quality.
 - **Expression CC (11)** is the most impactful CC for realism on strings, brass, and winds. Place `cc:expr:N` events at phrase peaks and valleys rather than only at the start of a voice.
 - **CC events pass through all transforms unchanged** — transpose, augment, retrograde, invert all leave CC/PC events in place. This is correct behavior: a pan setting should survive a pitch transform.

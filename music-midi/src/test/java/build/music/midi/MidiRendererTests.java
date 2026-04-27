@@ -5,23 +5,31 @@ import build.music.core.Note;
 import build.music.core.NoteEvent;
 import build.music.core.Rest;
 import build.music.core.Velocity;
+import build.music.harmony.Key;
+import build.music.pitch.NoteName;
 import build.music.pitch.SpelledPitch;
 import build.music.score.Part;
 import build.music.score.Score;
+import build.music.score.SectionMarker;
 import build.music.score.Voice;
 import build.music.time.Fraction;
 import build.music.time.RhythmicValue;
 import build.music.time.Tempo;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiEvent;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.ShortMessage;
 import javax.sound.midi.Track;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MidiRendererTests {
 
@@ -115,5 +123,125 @@ class MidiRendererTests {
             .build();
         Sequence seq = MidiRenderer.render(score);
         assertEquals(3, seq.getTracks().length); // conductor + 2 parts
+    }
+
+    @Test
+    void conductorTrackHasScoreTitleAsTrackName() throws InvalidMidiDataException {
+        var voice = Voice.of("melody", List.of(C4Q));
+        var score = Score.builder("My Score").part(Part.piano("Piano", voice)).build();
+        Sequence seq = MidiRenderer.render(score);
+        Track conductor = seq.getTracks()[0];
+        String name = findTrackName(conductor);
+        assertEquals("My Score", name);
+    }
+
+    @Test
+    void partTrackHasVoiceNameAsTrackName() throws InvalidMidiDataException {
+        var voice = Voice.of("bass", List.of(C4Q));
+        var score = Score.builder("Test").part(Part.piano("bass", voice)).build();
+        Sequence seq = MidiRenderer.render(score);
+        Track partTrack = seq.getTracks()[1];
+        assertEquals("bass", findTrackName(partTrack));
+    }
+
+    @Test
+    void keySignatureEmittedOnConductorTrack() throws InvalidMidiDataException {
+        var voice = Voice.of("melody", List.of(C4Q));
+        // G major = 1 sharp
+        var score = Score.builder("Test")
+            .key(Key.major(NoteName.G))
+            .part(Part.piano("Piano", voice))
+            .build();
+        Sequence seq = MidiRenderer.render(score);
+        Track conductor = seq.getTracks()[0];
+        byte[] keySig = findMetaData(conductor, 0x59);
+        assertEquals(1, keySig[0], "G major should have 1 sharp");
+        assertEquals(0, keySig[1], "major key");
+    }
+
+    @Test
+    void keySignatureMinorEmitted() throws InvalidMidiDataException {
+        var voice = Voice.of("melody", List.of(C4Q));
+        // A minor = 0 sharps/flats
+        var score = Score.builder("Test")
+            .key(Key.minor(NoteName.A))
+            .part(Part.piano("Piano", voice))
+            .build();
+        Sequence seq = MidiRenderer.render(score);
+        byte[] keySig = findMetaData(seq.getTracks()[0], 0x59);
+        assertEquals(0, keySig[0], "A minor has no accidentals");
+        assertEquals(1, keySig[1], "minor mode");
+    }
+
+    @Test
+    void noKeySignatureWhenKeyNotSet() throws InvalidMidiDataException {
+        var voice = Voice.of("melody", List.of(C4Q));
+        var score = Score.builder("Test").part(Part.piano("Piano", voice)).build();
+        Sequence seq = MidiRenderer.render(score);
+        assertTrue(findMetaOrNull(seq.getTracks()[0], 0x59) == null, "no key sig expected");
+    }
+
+    @Test
+    void sectionMarkersEmittedAtCorrectTicks() throws InvalidMidiDataException {
+        var voice = Voice.of("melody", List.of(C4Q, E4Q, G4Q, C4Q));
+        var score = Score.builder("Test")
+            .sectionMarkers(List.of(
+                new SectionMarker("intro", 1),
+                new SectionMarker("verse", 3)
+            ))
+            .part(Part.piano("Piano", voice))
+            .build();
+        Sequence seq = MidiRenderer.render(score);
+
+        List<MarkerEntry> found = collectMarkers(seq.getTracks()[0]);
+        assertEquals(2, found.size());
+        assertEquals("intro", found.get(0).name());
+        assertEquals(0L, found.get(0).tick());
+        assertEquals("verse", found.get(1).name());
+        // bar 3 start = 2 completed measures * 4 quarters * 480 ticks = 3840
+        assertEquals(3840L, found.get(1).tick());
+    }
+
+    // ── helpers ──────────────────────────────────────────────────────────────
+
+    private static String findTrackName(final Track track) {
+        for (int i = 0; i < track.size(); i++) {
+            final var msg = track.get(i).getMessage();
+            if (msg instanceof MetaMessage mm && mm.getType() == 0x03) {
+                return new String(mm.getData(), StandardCharsets.UTF_8);
+            }
+        }
+        return null;
+    }
+
+    private static byte[] findMetaData(final Track track, final int type) {
+        final byte[] data = findMetaOrNull(track, type);
+        if (data == null) {
+            throw new AssertionError("No meta message of type 0x" + Integer.toHexString(type) + " found");
+        }
+        return data;
+    }
+
+    private static byte[] findMetaOrNull(final Track track, final int type) {
+        for (int i = 0; i < track.size(); i++) {
+            final var msg = track.get(i).getMessage();
+            if (msg instanceof MetaMessage mm && mm.getType() == type) {
+                return mm.getData();
+            }
+        }
+        return null;
+    }
+
+    private record MarkerEntry(String name, long tick) { }
+
+    private static List<MarkerEntry> collectMarkers(final Track track) {
+        final List<MarkerEntry> result = new java.util.ArrayList<>();
+        for (int i = 0; i < track.size(); i++) {
+            final MidiEvent evt = track.get(i);
+            if (evt.getMessage() instanceof MetaMessage mm && mm.getType() == 0x06) {
+                result.add(new MarkerEntry(new String(mm.getData(), StandardCharsets.UTF_8), evt.getTick()));
+            }
+        }
+        return result;
     }
 }
