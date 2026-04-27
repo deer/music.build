@@ -162,10 +162,10 @@ public final class HarmonyTools {
      * Produces a pattern of root-fifth-third-approach per bar.
      * Requires either harmony.set_bars (preferred) or harmony.set_key + harmony.chord_progression.
      *
-     * @param targetVoice  name for the generated bass voice (default "bass")
-     * @param octave       octave for bass notes (default 2, i.e. C2–B2 range)
-     * @param bars         number of bars (default = number of chords defined)
-     * @param velocity     dynamics name (ppp/pp/p/mp/mf/f/ff/fff, default mf)
+     * @param targetVoice   name for the generated bass voice (default "bass")
+     * @param octave        octave for bass notes (default 2, i.e. C2–B2 range)
+     * @param bars          number of bars (default = number of chords defined)
+     * @param velocity      dynamics name (ppp/pp/p/mp/mf/f/ff/fff, default mf)
      * @param approachStyle approach note style: chromatic (default), diatonic, none
      */
     public static ToolResult walkingBass(

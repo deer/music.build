@@ -152,8 +152,10 @@ public final class MusicXmlRenderer {
                     }
                 }
             }
-            case ControlChange cc -> {} // no MusicXML representation
-            case ProgramChange pc -> {} // no MusicXML representation
+            case ControlChange cc -> {
+            } // no MusicXML representation
+            case ProgramChange pc -> {
+            } // no MusicXML representation
         }
     }
 

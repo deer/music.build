@@ -223,8 +223,8 @@ public final class ExportTools {
     }
 
     public static ToolResult exportMusicXml(final CompositionContext ctx,
-                                             final String filename,
-                                             final ExportOptions options) {
+                                            final String filename,
+                                            final ExportOptions options) {
         if (ctx.voiceNames().isEmpty()) {
             return ToolResult.error("No voices to export. Create at least one voice first.");
         }

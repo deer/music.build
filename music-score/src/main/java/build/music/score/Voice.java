@@ -68,7 +68,7 @@ public final class Voice
     @SuppressWarnings("unchecked")
     public <T> Iterator<T> iterator(final Class<T> type) {
         if (type != null
-                && (type.isAssignableFrom(NoteEvent.class) || NoteEvent.class.isAssignableFrom(type))) {
+            && (type.isAssignableFrom(NoteEvent.class) || NoteEvent.class.isAssignableFrom(type))) {
             return (Iterator<T>) events().stream().filter(type::isInstance).iterator();
         }
         return super.iterator(type);
