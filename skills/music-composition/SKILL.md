@@ -136,10 +136,14 @@ C4/q~stac D4/q~stac r/e E4/e F4/q  # staccato melody
 
 ### Drums
 - `drums.preset` — load a named drum pattern for N bars; creates `drums_kick`, `drums_snare`, etc. voices on channel 9
-  - Available presets: `house_4on4`, `rock_8th`, `rock_basic`, `bossa_nova`, `waltz`, `waltz_jazz`, `swing`, `afrohouse`
-  - `waltz_jazz` (3/4): kick + hi-hat on beat 1, soft brushed snare (MP) on beats 2 & 3 — more idiomatic than `waltz` for jazz contexts
-  - `bossa_nova` creates: `drums_kick`, `drums_rim`, `drums_hihat` (eighth hi-hat), `drums_clave` (tresillo: dq+dq+q)
-  - `afrohouse` creates: `drums_kick` (beat 1, and-of-2, beat 3 — syncopated, not 4-on-the-floor), `drums_clap` (2&4), `drums_hihat` (closed eighths with open hat on and-of-2 and and-of-4), `drums_congas` (hi/low conga alternating), `drums_maracas` (running eighths, velocity P). Set `drums_maracas` to `p` or `pp` and `drums_congas` to `mp` after loading.
+  - `house_4on4` — four-on-the-floor kick every beat + clap on 2 & 4 + closed 8th hi-hats; the EDM/dance foundation. Use at 120–130 BPM.
+  - `rock_8th` — driving 8th hi-hat, snare on 2 & 4, kick on 1 & 3; heavier and faster than `rock_basic`. Use at 130–180 BPM.
+  - `rock_basic` — standard rock backbeat: quarter hi-hat, snare on 2 & 4, kick on 1 & 3; backbone of rock and pop-rock. Use at 100–160 BPM.
+  - `swing` — jazz ride cymbal pattern, hi-hat on 2 & 4, snare on 2 & 4; pair with `score.set_swing "2/3"` for authentic jazz feel. Use at 120–220 BPM.
+  - `waltz` — simple 3/4: kick on beat 1, snare on beats 2 & 3; works for classical, folk, or pop waltzes. Use at 100–160 BPM.
+  - `waltz_jazz` (3/4) — kick + hi-hat on beat 1, soft brushed snare (MP) on beats 2 & 3; more idiomatic than `waltz` for jazz waltz contexts. Pair with `score.set_swing "2/3"`.
+  - `bossa_nova` — defining rhythm is the **tresillo** clave (3+3+2 eighths, i.e., dq+dq+q); creates `drums_kick`, `drums_rim`, `drums_hihat` (eighth hi-hat), `drums_clave`. Do NOT add swing — the clave replaces swing feel.
+  - `afrohouse` — syncopated (not 4-on-the-floor) kick + open hi-hat on upbeats + hand percussion; creates `drums_kick` (beat 1, and-of-2, beat 3), `drums_clap` (2&4), `drums_hihat` (8ths + open on upbeats), `drums_congas` (hi/low alternating), `drums_maracas` (running eighths, velocity P). After loading: set `drums_maracas` to `p` or `pp` and `drums_congas` to `mp`.
 
 ### Rules / validation
 - `rules.check` — run voice-leading and meter rules; percussion voices (channel 9) are automatically skipped
@@ -182,74 +186,7 @@ C4/q~stac D4/q~stac r/e E4/e F4/q  # staccato melody
 
 **Synth:** `synth_lead` (sawtooth — classic house/trance lead), `synth_pad` (warm pad — chord stabs)
 
-**Drums:** `drums` — automatically assigned to MIDI channel 9 (GM percussion). Notes in the voice are treated as GM drum sound numbers. Use the note names below to select sounds:
-
-| Note | MIDI | GM Drum Sound        | Use                           |
-|------|------|----------------------|-------------------------------|
-| B1   | 35   | Acoustic Bass Drum   | deep kick variant             |
-| C2   | 36   | Bass Drum 1          | four-on-the-floor kick        |
-| C#2  | 37   | Side Stick           | rim shot                      |
-| D2   | 38   | Acoustic Snare       | snare / backbeat              |
-| Eb2  | 39   | Hand Clap            | clap on 2 & 4                 |
-| E2   | 40   | Electric Snare       | tighter snare sound           |
-| F2   | 41   | Low Floor Tom        | floor tom low                 |
-| F#2  | 42   | Closed Hi-Hat        | 8th-note groove               |
-| G2   | 43   | High Floor Tom       | floor tom high                |
-| Ab2  | 44   | Pedal Hi-Hat         | foot hi-hat                   |
-| A2   | 45   | Low Tom              | tom fill                      |
-| Bb2  | 46   | Open Hi-Hat          | accent on the "and"           |
-| B2   | 47   | Low-Mid Tom          | tom fill                      |
-| C3   | 48   | Hi-Mid Tom           | tom fill                      |
-| C#3  | 49   | Crash Cymbal 1       | section transitions           |
-| D3   | 50   | High Tom             | highest tom                   |
-| Eb3  | 51   | Ride Cymbal 1        | ride groove                   |
-| E3   | 52   | Chinese Cymbal       | aggressive accent             |
-| F3   | 53   | Ride Bell            | ride bell ping                |
-| F#3  | 54   | Tambourine           | 8th/16th texture              |
-| G3   | 55   | Splash Cymbal        | quick accent                  |
-| Ab3  | 56   | Cowbell              | funk/disco accent             |
-| A3   | 57   | Crash Cymbal 2       | second crash                  |
-| Bb3  | 58   | Vibraslap            | Latin accent                  |
-| B3   | 59   | Ride Cymbal 2        | second ride                   |
-| C4   | 60   | Hi Bongo             | Latin/Afro hand percussion    |
-| C#4  | 61   | Low Bongo            | Latin/Afro hand percussion    |
-| D4   | 62   | Mute Hi Conga        | Afrohouse/Latin percussion    |
-| D#4  | 63   | Open Hi Conga        | Afrobeats hand percussion     |
-| E4   | 64   | Low Conga            | Afrobeats hand percussion     |
-| F4   | 65   | High Timbale         | Latin percussion              |
-| F#4  | 66   | Low Timbale          | Latin percussion              |
-| G4   | 67   | High Agogo           | Latin bell tone               |
-| Ab4  | 68   | Low Agogo            | Latin bell tone               |
-| A4   | 69   | Cabasa               | 16th-note shaker texture      |
-| Bb4  | 70   | Maracas              | 16th/8th texture layer        |
-| B4   | 71   | Short Whistle        | novelty/accents               |
-| C5   | 72   | Long Whistle         | novelty/accents               |
-| C#5  | 73   | Short Guiro          | Latin scrape short            |
-| D5   | 74   | Long Guiro           | Latin scrape long             |
-| Eb5  | 75   | Claves               | tresillo / clave pattern      |
-| E5   | 76   | Hi Wood Block        | percussive click high         |
-| F5   | 77   | Low Wood Block       | percussive click low          |
-| F#5  | 78   | Mute Cuica           | Brazilian cuica               |
-| G5   | 79   | Open Cuica           | Brazilian cuica               |
-| Ab5  | 80   | Mute Triangle        | delicate accent               |
-| A5   | 81   | Open Triangle        | bright delicate accent        |
-
-**Drum preset shortcut — instead of building patterns manually, use `drums.preset`:**
-```
-drums.preset preset="house_4on4" bars=8
-# Creates drums_kick, drums_clap, drums_hihat — 8 bars, all on channel 9
-```
-
-**Manual drum voice example (1 bar, 4/4):**
-```
-voice.create "kick"  "C2/q C2/q C2/q C2/q"
-voice.create "snare" "r/q D2/q r/q D2/q"
-voice.create "hats"  "F#2/e F#2/e F#2/e F#2/e F#2/e F#2/e F#2/e F#2/e"
-score.assign_instrument "kick"  "drums"
-score.assign_instrument "snare" "drums"
-score.assign_instrument "hats"  "drums"
-# Then voice.repeat each voice for the desired number of bars
-```
+**Drums:** `drums` — automatically assigned to MIDI channel 9 (GM percussion). Notes in the voice are treated as GM drum sound numbers. For the full note-to-sound map, read `skills/music-composition/drum-note-map.md`. Common notes: `C2` kick, `D2` snare, `F#2` closed hi-hat, `Bb2` open hi-hat, `Eb2` clap, `Eb3` ride.
 
 ## Typical Workflow
 
@@ -293,33 +230,6 @@ voice.set_dynamics "bass" "f"
 score.assign_instrument "bass" "electric_bass"
 ```
 
-**Walking bass (auto-generated from chord changes):**
-```
-harmony.set_key "G minor"
-harmony.set_bars "1:Gm7 2:C7 3:Fm7 4:Bb7 5:Ebmaj7 6:Ebmaj7 7:Am7b5 8:D7"
-harmony.walking_bass target_voice="bass" octave=2
-score.set_swing ratio="2/3"          # add jazz swing to eighths
-score.assign_instrument "bass" "electric_bass"
-```
-
-**Jazz swing feel:**
-```
-# Write melody in straight eighths, then add swing for playback
-score.set_swing ratio="2/3"          # standard 2:1 jazz swing
-# score.set_swing ratio="3/5"        # lighter shuffle
-# score.set_swing ratio="0"          # disable
-```
-
-**Jazz comping from chord changes (no manual note entry):**
-```
-harmony.set_key "Bb major"
-harmony.set_bars "1:Bb7 2:Bb7 3:Eb7 4:Eb7 5:Bb7 6:F7"
-harmony.comp target_voice="comp" style="charleston" octave=3
-score.set_swing ratio="2/3"
-score.assign_instrument "comp" "rhodes"
-# style options: quarter_stabs (2&4), on_beat, eighth_pump, shell_voicings, charleston
-```
-
 **Diatonic harmony in thirds:**
 ```
 harmony.set_key "G major"
@@ -353,6 +263,46 @@ form.set_ending section="A" pass=2 ending_section="A_end2"
 form.repeat_section "A"
 form.build   # LilyPond: \repeat volta 2 + \alternative; MIDI: correct ending per pass
 ```
+
+**Multi-section form with different voices per section (AABB, AABA, etc.):**
+```
+# Each section gets its own voices. The pattern: build → snapshot → delete → rebuild → snapshot.
+# harmony.set_bars must be reset per section; it is section-local.
+
+# --- A section ---
+harmony.set_key "D major"
+harmony.set_bars "1:D 2:G 3:D 4:A 5:D 6:G 7:A 8:D"
+voice.create "melody" "..."          # 8 bars
+harmony.comp target_voice="chords" style="on_beat" octave=3
+voice.create "bodhran_bar" "G2/q G2/q G2/q G2/q"
+voice.repeat "bodhran_bar" times=8 target_voice="bodhran"
+voice.delete "bodhran_bar"
+score.assign_instrument "melody" "flute"
+score.assign_instrument "chords" "accordion"
+score.assign_instrument "bodhran" "drums"
+
+form.create_section "A" measures=8
+form.repeat_section "A"              # AABB: queue the second A now
+
+# --- Transition: delete only the voices that change; keep shared ones (e.g. bodhran) ---
+voice.delete "melody"
+voice.delete "chords"
+
+# --- B section ---
+harmony.set_bars "1:G 2:D 3:G 4:A 5:G 6:Em 7:A 8:D"
+voice.create "melody" "..."          # 8 bars of new material
+harmony.comp target_voice="chords" style="on_beat" octave=3
+score.assign_instrument "melody" "flute"
+score.assign_instrument "chords" "accordion"
+# bodhran is still in scope — captured in B section too
+
+form.create_section "B" measures=8
+form.repeat_section "B"              # AABB: queue the second B
+
+form.build   # assembles A(8) + A(8) + B(8) + B(8) = 32 bars
+# All voices (melody, chords, bodhran) replaced with full 32-bar assembled versions
+```
+Key rules: delete only voices that change between sections; shared voices (drums, bass ostinato) stay in scope and are captured in every section automatically. `harmony.set_bars` is reset per section — `form.build` offsets and merges them into the final score.
 
 **Ritardando on final bars:**
 ```
@@ -404,10 +354,13 @@ voice.delete "cell"
 voice.delete "cell_inv"
 voice.delete "cell_retro"
 voice.delete "cell_up5"
-voice.delete "cell_aug"
 voice.delete "cell_slow"
 ```
 The key idea: **one cell generates all the material**. The transforms (invert, retrograde, transpose, augment) are the compositional engine — not just decoration.
+
+## Genre Scaffolding
+
+For genre-specific scaffolding (Jazz, Bossa Nova, House, Reggae, Blues, Hip-Hop, Afrohouse, Traditional Irish), read `skills/music-composition/genre-reference.md`.
 
 ## Tips
 
