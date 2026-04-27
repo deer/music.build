@@ -3,6 +3,7 @@ module build.music.midi {
     requires build.music.time;
     requires build.music.core;
     requires build.music.score;
+    requires build.music.harmony;
     requires java.desktop;
     requires build.base.marshalling;
 

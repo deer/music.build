@@ -8,11 +8,13 @@ import build.music.core.ProgramChange;
 import build.music.pitch.Pitch;
 import build.music.score.Part;
 import build.music.score.Score;
+import build.music.score.SectionMarker;
 import build.music.time.Fraction;
 import build.music.time.Tempo;
 import build.music.time.TempoChange;
 import build.music.time.TimeSignature;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaMessage;
@@ -37,10 +39,14 @@ public final class MidiRenderer {
     public static Sequence render(final Score score) throws InvalidMidiDataException {
         final Sequence seq = new Sequence(Sequence.PPQ, TICKS_PER_QUARTER);
 
-        // Track 0: conductor (tempo + time signature)
+        // Track 0: conductor (tempo + time signature + key signature + section markers)
         final Track conductor = seq.createTrack();
+        addTrackName(conductor, 0, score.title());
         addTempo(conductor, 0, score.tempo());
         addTimeSignature(conductor, 0, score.timeSignature());
+        if (score.key() != null) {
+            addKeySignature(conductor, 0, score.key().signatureAccidentals(), score.key().minor());
+        }
         // Emit per-bar tempo events for any gradual tempo changes
         final long ticksPerMeasure = fractionToTicks(score.timeSignature().measureDuration());
         for (final TempoChange tc : score.tempoChanges()) {
@@ -49,6 +55,10 @@ public final class MidiRenderer {
                 final long tick = (tc.startBar() - 1 + i) * ticksPerMeasure;
                 addTempo(conductor, tick, Tempo.of(bpms[i]));
             }
+        }
+        for (final SectionMarker sm : score.sectionMarkers()) {
+            final long tick = (long) (sm.startBar() - 1) * ticksPerMeasure;
+            addMarker(conductor, tick, sm.name());
         }
         addEndOfTrack(conductor, 0);
 
@@ -60,6 +70,7 @@ public final class MidiRenderer {
 
         for (final Part part : score.scoreParts()) {
             final Track track = seq.createTrack();
+            addTrackName(track, 0, part.name());
             // Program change at tick 0
             final ShortMessage pc = new ShortMessage();
             pc.setMessage(ShortMessage.PROGRAM_CHANGE, part.midiChannel(), part.midiProgram(), 0);
@@ -252,5 +263,23 @@ public final class MidiRenderer {
     private static void addEndOfTrack(final Track track, final long tick) throws InvalidMidiDataException {
         final MetaMessage eot = new MetaMessage(0x2F, new byte[0], 0);
         track.add(new MidiEvent(eot, tick));
+    }
+
+    private static void addTrackName(final Track track, final long tick, final String name) throws InvalidMidiDataException {
+        final byte[] data = name.getBytes(StandardCharsets.UTF_8);
+        final MetaMessage msg = new MetaMessage(0x03, data, data.length);
+        track.add(new MidiEvent(msg, tick));
+    }
+
+    private static void addKeySignature(final Track track, final long tick, final int sf, final boolean minor) throws InvalidMidiDataException {
+        final byte[] data = {(byte) sf, (byte) (minor ? 1 : 0)};
+        final MetaMessage msg = new MetaMessage(0x59, data, data.length);
+        track.add(new MidiEvent(msg, tick));
+    }
+
+    private static void addMarker(final Track track, final long tick, final String name) throws InvalidMidiDataException {
+        final byte[] data = name.getBytes(StandardCharsets.UTF_8);
+        final MetaMessage msg = new MetaMessage(0x06, data, data.length);
+        track.add(new MidiEvent(msg, tick));
     }
 }

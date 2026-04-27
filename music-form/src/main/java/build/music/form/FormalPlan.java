@@ -14,6 +14,7 @@ import build.music.core.Rest;
 import build.music.pitch.typesystem.MusicCodeModel;
 import build.music.score.Part;
 import build.music.score.Score;
+import build.music.score.SectionMarker;
 import build.music.score.StructuredVoice;
 import build.music.score.StructuredVoice.Segment;
 import build.music.score.Voice;
@@ -152,6 +153,14 @@ public final class FormalPlan
             structuredVoices = buildStructuredVoices(allVoiceNames, ts);
         }
         builder.structuredVoices(structuredVoices.isEmpty() ? null : structuredVoices);
+
+        final List<SectionMarker> sectionMarkers = new ArrayList<>();
+        int cumBar = 1;
+        for (final Section s : sections) {
+            sectionMarkers.add(new SectionMarker(s.name(), cumBar));
+            cumBar += s.measures();
+        }
+        builder.sectionMarkers(sectionMarkers.isEmpty() ? null : sectionMarkers);
 
         return builder.build();
     }

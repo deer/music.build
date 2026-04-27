@@ -32,6 +32,10 @@
             <artifactId>music-score</artifactId>
         </dependency>
         <dependency>
+            <groupId>build.music</groupId>
+            <artifactId>music-harmony</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>
