@@ -1,8 +1,10 @@
 package build.music.mcp.tools;
 
 import build.music.core.Chord;
+import build.music.core.ControlChange;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
+import build.music.core.ProgramChange;
 import build.music.core.Rest;
 import build.music.mcp.CompositionContext;
 import build.music.mcp.ToolResult;
@@ -196,6 +198,8 @@ public final class TransformTools {
                 case Chord c -> (NoteEvent) Chord.of(
                     c.pitches().stream().map(pt::apply).toList(),
                     c.duration(), c.velocity());
+                case ControlChange cc -> cc;
+                case ProgramChange pc -> pc;
             })
             .toList();
     }

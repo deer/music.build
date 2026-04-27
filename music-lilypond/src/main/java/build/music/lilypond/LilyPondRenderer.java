@@ -3,8 +3,10 @@ package build.music.lilypond;
 import build.music.core.Articulation;
 import build.music.core.Chord;
 import build.music.core.ChordSymbol;
+import build.music.core.ControlChange;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
+import build.music.core.ProgramChange;
 import build.music.core.Rest;
 import build.music.harmony.KeySignature;
 import build.music.pitch.Accidental;
@@ -261,6 +263,8 @@ public final class LilyPondRenderer {
                             sb.append(">").append(tupletBase);
                         }
                         case Rest r -> sb.append("r").append(tupletBase);
+                        case ControlChange cc -> {} // no LilyPond representation
+                        case ProgramChange pc -> {} // no LilyPond representation
                     }
                     cursor = cursor.add(te.duration().fraction());
                     if (cursor.compareTo(measureDur) >= 0) {
@@ -310,6 +314,8 @@ public final class LilyPondRenderer {
                     sb.append("r");
                     sb.append(renderDuration(event.duration().fraction()));
                 }
+                case ControlChange cc -> {} // no LilyPond representation
+                case ProgramChange pc -> {} // no LilyPond representation
             }
             cursor = cursor.add(event.duration().fraction());
             if (cursor.compareTo(measureDur) >= 0) {

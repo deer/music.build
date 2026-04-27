@@ -1,8 +1,10 @@
 package build.music.midi;
 
 import build.music.core.Chord;
+import build.music.core.ControlChange;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
+import build.music.core.ProgramChange;
 import build.music.pitch.Pitch;
 import build.music.score.Part;
 import build.music.score.Score;
@@ -119,6 +121,14 @@ public final class MidiRenderer {
                     final ShortMessage off = new ShortMessage();
                     off.setMessage(ShortMessage.NOTE_OFF, part.midiChannel(), n.midi(), 0);
                     track.add(new MidiEvent(off, actualOnTick + soundingTicks));
+                } else if (event instanceof ControlChange cc) {
+                    final ShortMessage msg = new ShortMessage();
+                    msg.setMessage(ShortMessage.CONTROL_CHANGE, part.midiChannel(), cc.cc(), cc.value());
+                    track.add(new MidiEvent(msg, tick));
+                } else if (event instanceof ProgramChange pcEvt) {
+                    final ShortMessage msg = new ShortMessage();
+                    msg.setMessage(ShortMessage.PROGRAM_CHANGE, part.midiChannel(), pcEvt.program(), 0);
+                    track.add(new MidiEvent(msg, tick));
                 } else if (!tiedAbsorbed[i] && event instanceof Chord c) {
                     long chordOnTick = tick;
                     final long chordSoundingTicks;
@@ -184,6 +194,14 @@ public final class MidiRenderer {
                 final ShortMessage off = new ShortMessage();
                 off.setMessage(ShortMessage.NOTE_OFF, channel, n.midi(), 0);
                 track.add(new MidiEvent(off, tick + soundingTicks));
+            } else if (event instanceof ControlChange cc) {
+                final ShortMessage msg = new ShortMessage();
+                msg.setMessage(ShortMessage.CONTROL_CHANGE, channel, cc.cc(), cc.value());
+                track.add(new MidiEvent(msg, tick));
+            } else if (event instanceof ProgramChange pcEvt) {
+                final ShortMessage msg = new ShortMessage();
+                msg.setMessage(ShortMessage.PROGRAM_CHANGE, channel, pcEvt.program(), 0);
+                track.add(new MidiEvent(msg, tick));
             } else if (event instanceof Chord c) {
                 for (final Pitch p : c.pitches()) {
                     final ShortMessage on = new ShortMessage();

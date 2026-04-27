@@ -1,8 +1,10 @@
 package build.music.voice;
 
 import build.music.core.Chord;
+import build.music.core.ControlChange;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
+import build.music.core.ProgramChange;
 import build.music.core.Rest;
 import build.music.score.Voice;
 import build.music.time.Fraction;
@@ -275,6 +277,8 @@ public final class VoiceOperations {
             case Note n -> n.pitch().toString() + "/" + formatDuration(event);
             case Rest r -> "r/" + formatDuration(event);
             case Chord c -> "<chord>/" + formatDuration(event);
+            case ControlChange cc -> "cc:" + cc.cc() + ":" + cc.value();
+            case ProgramChange pc -> "pc:" + pc.program();
         };
     }
 

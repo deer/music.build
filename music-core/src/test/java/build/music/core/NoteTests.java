@@ -64,6 +64,8 @@ class NoteTests {
             case Note n -> "note:" + n.midi();
             case Rest r -> "rest";
             case Chord c -> "chord";
+            case ControlChange cc -> "cc";
+            case ProgramChange pc -> "pc";
         };
         assertEquals("note:67", result);
     }

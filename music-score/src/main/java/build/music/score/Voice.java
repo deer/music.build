@@ -10,8 +10,10 @@ import build.base.marshalling.Unmarshal;
 import build.codemodel.foundation.descriptor.AbstractTraitable;
 import build.codemodel.foundation.descriptor.Trait;
 import build.music.core.Chord;
+import build.music.core.ControlChange;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
+import build.music.core.ProgramChange;
 import build.music.core.Rest;
 import build.music.pitch.SpelledInterval;
 import build.music.pitch.typesystem.MusicCodeModel;
@@ -102,6 +104,8 @@ public final class Voice
                 case Note n -> (NoteEvent) n.transpose(interval);
                 case Rest r -> r;
                 case Chord c -> (NoteEvent) c.transpose(interval);
+                case ControlChange cc -> cc;
+                case ProgramChange pc -> pc;
             })
             .toList();
         return Voice.of(name(), transposed);
