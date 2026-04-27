@@ -69,6 +69,35 @@ C4/q~stac D4/q E4/h     # staccato C, normal D and E
 
 Use `voice.set_articulation` to apply an articulation to an entire voice at once.
 
+**Control Change (CC) events** — point-in-time MIDI controller values placed inline in a voice sequence. Zero duration; do not advance time. MIDI only — invisible to LilyPond/MusicXML.
+```
+cc:pan:64          → center pan (CC 10, value 64)
+cc:pan:20          → hard left
+cc:pan:110         → hard right
+cc:expr:100        → high expression (CC 11)
+cc:expr:40         → low expression — fade down a phrase
+cc:reverb:60       → medium reverb send (CC 91)
+cc:mod:80          → modulation / vibrato depth (CC 1)
+cc:sustain:127     → sustain pedal down (CC 64)
+cc:sustain:0       → sustain pedal up
+cc:11:80           → numeric form — same as cc:expr:80
+```
+Named aliases: `mod` (1), `vol` (7), `pan` (10), `expr` (11), `sustain` (64), `reverb` (91), `chorus` (93).
+
+Expression CC (11) is how you shape dynamics on strings and brass — velocity sets the attack, `expr` shapes the phrase arc. Pan places instruments in the stereo field. Place CC events immediately before the note they should affect:
+```
+voice.create "strings" "cc:pan:30 cc:expr:60 C4/h cc:expr:90 E4/h cc:expr:70 G4/w"
+```
+
+**Program Change events** — mid-score instrument change within a voice. Zero duration. Use for switching patches (e.g. arco to pizzicato).
+```
+pc:45    → switch to Pizzicato Strings (0-indexed GM program; GM tables list this as #46)
+pc:40    → switch back to Violin (0-indexed GM program; GM tables list this as #41)
+```
+```
+voice.create "strings" "C4/h D4/h pc:45 E4/q F4/q G4/h"
+```
+
 **Examples:**
 ```
 C4/q D4/q E4/q F4/q              # four quarter notes
@@ -380,3 +409,6 @@ For genre-specific scaffolding (Jazz, Bossa Nova, House, Reggae, Blues, Hip-Hop,
 - After `form.build`, voices are replaced in-place — no `_form` suffix, no stale originals.
 - `rules.check` is advisory — violations are warnings/suggestions, never blockers. Percussion voices are skipped.
 - Key signature is now reflected in LilyPond output — call `harmony.set_key` before exporting for correct notation.
+- **CC/PC events** are MIDI-only — they are silently skipped in LilyPond and MusicXML export. Don't rely on them for notation; use them purely for MIDI playback quality.
+- **Expression CC (11)** is the most impactful CC for realism on strings, brass, and winds. Place `cc:expr:N` events at phrase peaks and valleys rather than only at the start of a voice.
+- **CC events pass through all transforms unchanged** — transpose, augment, retrograde, invert all leave CC/PC events in place. This is correct behavior: a pan setting should survive a pitch transform.

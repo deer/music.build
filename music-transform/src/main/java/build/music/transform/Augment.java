@@ -1,8 +1,10 @@
 package build.music.transform;
 
 import build.music.core.Chord;
+import build.music.core.ControlChange;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
+import build.music.core.ProgramChange;
 import build.music.core.Rest;
 import build.music.time.Duration;
 import build.music.time.Fraction;
@@ -52,6 +54,8 @@ public record Augment(Fraction factor) implements MelodicTransform {
             case Note n -> Note.of(n.pitch(), scaled, n.velocity(), n.articulation(), n.tied());
             case Rest r -> Rest.of(scaled);
             case Chord c -> Chord.of(c.pitches(), scaled, c.velocity());
+            case ControlChange cc -> cc;
+            case ProgramChange pc -> pc;
         };
     }
 

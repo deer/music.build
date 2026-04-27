@@ -1,8 +1,10 @@
 package build.music.demo;
 
 import build.music.core.Chord;
+import build.music.core.ControlChange;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
+import build.music.core.ProgramChange;
 import build.music.core.Rest;
 import build.music.lilypond.LilyPondEngraver;
 import build.music.lilypond.LilyPondRenderer;
@@ -151,6 +153,8 @@ public final class OdeToJoy {
                     (NoteEvent) Note.of(invert.apply(n.pitch()), n.duration(), n.velocity(), n.articulation(), n.tied());
                 case Rest r -> r;
                 case Chord c -> (NoteEvent) c;
+                case ControlChange cc -> cc;
+                case ProgramChange pc -> pc;
             })
             .toList());
 

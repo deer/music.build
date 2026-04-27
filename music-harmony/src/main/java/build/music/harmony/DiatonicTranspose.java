@@ -1,8 +1,10 @@
 package build.music.harmony;
 
 import build.music.core.Chord;
+import build.music.core.ControlChange;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
+import build.music.core.ProgramChange;
 import build.music.core.Rest;
 import build.music.pitch.SpelledPitch;
 
@@ -75,7 +77,9 @@ public final class DiatonicTranspose {
                 yield (NoteEvent) Note.of(newPitch, n.duration(), n.velocity(), n.articulation(), n.tied());
             }
             case Rest r -> r;
-            case Chord c -> c; // pass chords through unchanged in diatonic transposition
+            case Chord c -> c;
+            case ControlChange cc -> cc;
+            case ProgramChange pc -> pc;
         }).toList();
     }
 }

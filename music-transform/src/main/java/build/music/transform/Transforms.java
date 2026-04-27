@@ -1,8 +1,10 @@
 package build.music.transform;
 
 import build.music.core.Chord;
+import build.music.core.ControlChange;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
+import build.music.core.ProgramChange;
 import build.music.core.Rest;
 import build.music.pitch.Pitch;
 import build.music.pitch.SpelledInterval;
@@ -33,8 +35,10 @@ public final class Transforms {
         return events.stream()
             .map(event -> switch (event) {
                 case Note n -> (NoteEvent) n.transpose(interval);
-                case Rest r -> r; // Rest unchanged
+                case Rest r -> r;
                 case Chord c -> (NoteEvent) c.transpose(interval);
+                case ControlChange cc -> cc;
+                case ProgramChange pc -> pc;
             })
             .toList();
     }
@@ -51,10 +55,12 @@ public final class Transforms {
                 .map(event -> switch (event) {
                     case Note n ->
                         (NoteEvent) Note.of(invert.apply(n.pitch()), n.duration(), n.velocity(), n.articulation(), n.tied());
-                    case build.music.core.Rest r -> r;
+                    case Rest r -> r;
                     case Chord c -> (NoteEvent) Chord.of(
                         c.pitches().stream().map(p -> invert.apply(p)).toList(),
                         c.duration(), c.velocity());
+                    case ControlChange cc -> cc;
+                    case ProgramChange pc -> pc;
                 })
                 .toList();
         };

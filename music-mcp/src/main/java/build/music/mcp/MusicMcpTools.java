@@ -438,7 +438,7 @@ public final class MusicMcpTools {
     }
 
     private static McpTool exportMusicXmlTool(final CompositionContextProvider provider,
-                                               final ExportOptions exportOptions) {
+                                              final ExportOptions exportOptions) {
         return tool(provider,
             "export.musicxml",
             "Export the current composition to MusicXML 4.0 (.musicxml). " +

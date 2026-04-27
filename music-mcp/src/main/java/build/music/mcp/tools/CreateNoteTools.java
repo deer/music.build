@@ -2,8 +2,10 @@ package build.music.mcp.tools;
 
 import build.music.core.Articulation;
 import build.music.core.Chord;
+import build.music.core.ControlChange;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
+import build.music.core.ProgramChange;
 import build.music.core.Rest;
 import build.music.core.Velocity;
 import build.music.pitch.Pitch;
@@ -78,13 +80,20 @@ public final class CreateNoteTools {
                 events.add(parseChordToken(pitchesStr, durPart));
                 i = tokenEnd;
             } else {
-                // Regular token (note or rest) — read until whitespace
+                // Regular token (note, rest, CC, or program change) — read until whitespace
                 int tokenEnd = i;
                 while (tokenEnd < input.length() && !Character.isWhitespace(input.charAt(tokenEnd))) {
                     tokenEnd++;
                 }
                 final String token = input.substring(i, tokenEnd);
-                events.add(parseToken(token));
+                final String lower = token.toLowerCase();
+                if (lower.startsWith("cc:")) {
+                    events.add(parseCcToken(token));
+                } else if (lower.startsWith("pc:")) {
+                    events.add(parsePcToken(token));
+                } else {
+                    events.add(parseToken(token));
+                }
                 i = tokenEnd;
             }
         }
@@ -124,6 +133,61 @@ public final class CreateNoteTools {
     /**
      * Parse a single note/rest token like "C4/q", "r/h", "C4/q~stac".
      */
+    static ControlChange parseCcToken(final String token) {
+        // Formats: "cc:11:80" or "cc:pan:64"
+        final String[] parts = token.split(":", 3);
+        if (parts.length != 3) {
+            throw new IllegalArgumentException(
+                "Invalid CC token '" + token + "'. Expected 'cc:NUMBER:VALUE' or 'cc:NAME:VALUE' " +
+                    "(e.g. 'cc:pan:64', 'cc:expr:80', 'cc:11:80').");
+        }
+        final int ccNum = parseCcNumber(parts[1]);
+        final int value;
+        try {
+            value = Integer.parseInt(parts[2]);
+        } catch (final NumberFormatException e) {
+            throw new IllegalArgumentException(
+                "Invalid CC value in '" + token + "'. Expected a number 0-127.");
+        }
+        return new ControlChange(ccNum, value);
+    }
+
+    private static int parseCcNumber(final String nameOrNumber) {
+        return switch (nameOrNumber.toLowerCase()) {
+            case "mod", "modulation" -> 1;
+            case "vol", "volume" -> 7;
+            case "pan" -> 10;
+            case "expr", "expression" -> 11;
+            case "sustain" -> 64;
+            case "reverb" -> 91;
+            case "chorus" -> 93;
+            default -> {
+                try {
+                    yield Integer.parseInt(nameOrNumber);
+                } catch (final NumberFormatException e) {
+                    throw new IllegalArgumentException(
+                        "Unknown CC name '" + nameOrNumber + "'. Use 0-127 or a name: " +
+                            "mod, vol, pan, expr, sustain, reverb, chorus.");
+                }
+            }
+        };
+    }
+
+    static ProgramChange parsePcToken(final String token) {
+        // Format: "pc:73"
+        final String[] parts = token.split(":", 2);
+        if (parts.length != 2) {
+            throw new IllegalArgumentException(
+                "Invalid program change token '" + token + "'. Expected 'pc:NUMBER' (e.g. 'pc:40').");
+        }
+        try {
+            return new ProgramChange(Integer.parseInt(parts[1]));
+        } catch (final NumberFormatException e) {
+            throw new IllegalArgumentException(
+                "Invalid program number in '" + token + "'. Expected a number 0-127.");
+        }
+    }
+
     static NoteEvent parseToken(final String token) {
         final int slash = token.lastIndexOf('/');
         if (slash < 0) {
@@ -231,6 +295,8 @@ public final class CreateNoteTools {
                 yield n.pitch().spelled().toString() + "/" + formatDuration(n.duration()) + art + vel + tie;
             }
             case Rest r -> "r/" + formatDuration(r.duration());
+            case ControlChange cc -> "cc:" + cc.cc() + ":" + cc.value();
+            case ProgramChange pc -> "pc:" + pc.program();
             case Chord c -> {
                 final StringBuilder sb = new StringBuilder("<");
                 for (int i = 0; i < c.pitches().size(); i++) {

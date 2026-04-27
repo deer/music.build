@@ -1,5 +1,6 @@
 package build.music.mcp;
 
+import build.music.core.Note;
 import build.music.mcp.tools.DrumPresets;
 import build.music.mcp.tools.ExportTools;
 import build.music.mcp.tools.FormTools;
@@ -9,11 +10,9 @@ import build.music.mcp.tools.TransformTools;
 import build.music.mcp.tools.VoiceOpTools;
 import build.music.mcp.tools.VoiceTools;
 import build.music.pitch.typesystem.MusicCodeModel;
+import build.music.score.Score;
 import build.music.time.Fraction;
 import org.junit.jupiter.api.Test;
-
-import build.music.core.Note;
-import build.music.score.Score;
 
 import java.util.List;
 
@@ -24,13 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * Builds a jazz composition programmatically so you can explore the full model
  * structure (Score, Voice, NoteEvent, FormalPlan, Section, Key, BarChords …)
  * in the IntelliJ debugger.
- *
+ * <p>
  * Set a breakpoint on the final assertion and inspect `ctx` and `snapshot`.
- *
+ * <p>
  * Structure: ABA′ in A minor, 4/4 swing, 120 BPM
- *   A  (8 bars) — minor jazz melody + walking bass + charleston comp + swing drums
- *   B  (8 bars) — inverted + transposed variant, new comp colour
- *   A′ (8 bars) — repeat of A with a ritardando on the final 2 bars
+ * A  (8 bars) — minor jazz melody + walking bass + charleston comp + swing drums
+ * B  (8 bars) — inverted + transposed variant, new comp colour
+ * A′ (8 bars) — repeat of A with a ritardando on the final 2 bars
  */
 class SnapshotExplorationTest {
 
@@ -52,13 +51,13 @@ class SnapshotExplorationTest {
             // ── A section melody (8 bars) ─────────────────────────────────────
             VoiceTools.createVoice(ctx, "melody",
                 "E5/q D5/q C5/h " +           // bar 1 — Am7
-                "r/q A4/q B4/q C5/q " +        // bar 2
-                "A4/dq G4/e F4/h " +           // bar 3 — Dm7
-                "r/h E4/q G4/q " +             // bar 4
-                "F4/q E4/q D4/q C4/q " +       // bar 5 — Bm7b5
-                "B3/q C4/e D4/e E4/h " +       // bar 6 — E7 tension
-                "A4/dh G4/q " +                // bar 7 — resolution
-                "r/q E4/q A4/q r/q");          // bar 8 — pickup feel
+                    "r/q A4/q B4/q C5/q " +        // bar 2
+                    "A4/dq G4/e F4/h " +           // bar 3 — Dm7
+                    "r/h E4/q G4/q " +             // bar 4
+                    "F4/q E4/q D4/q C4/q " +       // bar 5 — Bm7b5
+                    "B3/q C4/e D4/e E4/h " +       // bar 6 — E7 tension
+                    "A4/dh G4/q " +                // bar 7 — resolution
+                    "r/q E4/q A4/q r/q");          // bar 8 — pickup feel
 
             VoiceTools.setDynamics(ctx, "melody", "mf");
             ScoreTools.assignInstrument(ctx, "melody", "piano");
@@ -78,7 +77,7 @@ class SnapshotExplorationTest {
 
             // ── Swing drums: 1 bar preset → repeat to 8 ──────────────────────
             DrumPresets.loadPreset(ctx, "swing", 1);
-            VoiceOpTools.repeat(ctx, "drums_kick",  8, "drums_kick");
+            VoiceOpTools.repeat(ctx, "drums_kick", 8, "drums_kick");
             VoiceOpTools.repeat(ctx, "drums_snare", 8, "drums_snare");
             VoiceOpTools.repeat(ctx, "drums_hihat", 8, "drums_hihat");
 
@@ -116,7 +115,7 @@ class SnapshotExplorationTest {
             ScoreTools.assignInstrument(ctx, "comp", "rhodes");
 
             DrumPresets.loadPreset(ctx, "swing", 1);
-            VoiceOpTools.repeat(ctx, "drums_kick",  8, "drums_kick");
+            VoiceOpTools.repeat(ctx, "drums_kick", 8, "drums_kick");
             VoiceOpTools.repeat(ctx, "drums_snare", 8, "drums_snare");
             VoiceOpTools.repeat(ctx, "drums_hihat", 8, "drums_hihat");
 
@@ -133,11 +132,11 @@ class SnapshotExplorationTest {
         ExportTools.exportAll(ctx, "test", ExportOptions.diskAndBytes());
 
         CompositionSnapshot snapshot = ScopedValue.where(MusicCodeModel.CURRENT, ctx.codeModel())
-                .call(ctx::snapshot);
+            .call(ctx::snapshot);
 
         // mereology: Score.composition(Note.class) must walk Score→Part→Voice→NoteEvent
         Score score = ScopedValue.where(MusicCodeModel.CURRENT, ctx.codeModel())
-                .call(ctx::buildScore);
+            .call(ctx::buildScore);
         List<Note> notes = score.composition(Note.class).toList();
 
         // ← set breakpoint here; explore ctx.score(), snapshot, notes,

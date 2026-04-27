@@ -1,8 +1,10 @@
 package build.music.musicxml;
 
 import build.music.core.Chord;
+import build.music.core.ControlChange;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
+import build.music.core.ProgramChange;
 import build.music.core.Rest;
 import build.music.harmony.Key;
 import build.music.pitch.SpelledPitch;
@@ -150,6 +152,10 @@ public final class MusicXmlRenderer {
                     }
                 }
             }
+            case ControlChange cc -> {
+            } // no MusicXML representation
+            case ProgramChange pc -> {
+            } // no MusicXML representation
         }
     }
 
