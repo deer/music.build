@@ -80,6 +80,7 @@
         <module>music-transform</module>
         <module>music-score</module>
         <module>music-midi</module>
+        <module>music-abc</module>
         <module>music-lilypond</module>
         <module>music-musicxml</module>
         <module>music-demo</module>
@@ -137,6 +138,11 @@
             </dependency>
             <dependency>
                 <groupId>build.music</groupId>
+                <artifactId>music-abc</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>build.music</groupId>
                 <artifactId>music-midi</artifactId>
                 <version>${revision}</version>
             </dependency>
@@ -180,6 +186,11 @@
             <dependency>
                 <groupId>build.base</groupId>
                 <artifactId>base-marshalling</artifactId>
+                <version>${base.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>build.base</groupId>
+                <artifactId>base-parsing</artifactId>
                 <version>${base.version}</version>
             </dependency>
             <dependency>

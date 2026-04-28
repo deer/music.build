@@ -3,6 +3,7 @@ package build.music.mcp.tools;
 import build.base.marshalling.Marshalled;
 import build.base.marshalling.Marshaller;
 import build.base.transport.json.JsonTransport;
+import build.music.abc.AbcReader;
 import build.music.mcp.CompositionContext;
 import build.music.mcp.CompositionSnapshot;
 import build.music.mcp.MusicMarshalling;
@@ -150,6 +151,33 @@ public final class SaveLoadTools {
                     ". Notes use sharp spellings — use transform.transpose if re-spelling is needed.");
         } catch (final IOException | InvalidMidiDataException e) {
             return ToolResult.error("Failed to load MIDI: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Tool: score.load_abc — parse an ABC notation string into voices.
+     * Creates one voice from the tune body, named after the T: title field.
+     * Existing voices are not cleared — call score.clear first if you want a fresh start.
+     *
+     * @param abcText full ABC notation string including headers and body
+     */
+    public static ToolResult loadAbc(final CompositionContext ctx, final String abcText) {
+        if (abcText == null || abcText.isBlank()) {
+            return ToolResult.error("ABC text is required.");
+        }
+        try {
+            final AbcReader.AbcImport imported = AbcReader.read(abcText);
+            ctx.setTempo(imported.tempo());
+            for (final Voice voice : imported.voices()) {
+                ctx.createVoice(voice.name(), voice.events());
+            }
+            final List<String> names = imported.voices().stream().map(Voice::name).toList();
+            return ToolResult.success(
+                "Loaded " + imported.voices().size() + " voice(s) from ABC notation" +
+                    (imported.title().isBlank() ? "" : " (" + imported.title() + ")") +
+                    " at " + imported.tempo().bpm() + " BPM. Voice names: " + names + ".");
+        } catch (final Exception e) {
+            return ToolResult.error("Failed to parse ABC: " + e.getMessage());
         }
     }
 
