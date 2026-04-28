@@ -41,6 +41,10 @@
         </dependency>
         <dependency>
             <groupId>build.music</groupId>
+            <artifactId>music-abc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>build.music</groupId>
             <artifactId>music-midi</artifactId>
         </dependency>
         <dependency>

@@ -4,6 +4,7 @@ module build.music.mcp {
     requires build.music.core;
     requires build.music.transform;
     requires build.music.score;
+    requires build.music.abc;
     requires build.music.midi;
     requires build.music.lilypond;
     requires build.music.musicxml;

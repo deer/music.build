@@ -7,6 +7,16 @@ description: "Use when composing music with the music-server MCP tools. Covers n
 
 You have 47 MCP tools for building compositions from scratch. This skill covers the syntax, tool flow, and patterns.
 
+## First Step: Preload All Tool Schemas
+
+Before doing anything else, load all music-server schemas in one batch ToolSearch call:
+
+```
+ToolSearch: "mcp music-server"  (max_results=50)
+```
+
+Do this once at the start of the session. MCP tool schemas are deferred — calling any tool without loading its schema first causes an error and forces a mid-composition round-trip.
+
 ## Note Sequence Syntax
 
 Notes are whitespace-separated tokens: `pitch/duration`
@@ -198,6 +208,7 @@ C4/q~stac D4/q~stac r/e E4/e F4/q  # staccato melody
 - `score.save` — save the full composition state to a JSON snapshot under `generated_tracks/` (voices, motifs, metadata, key, swing, bar chords, tempo changes). Use to checkpoint work in progress.
 - `score.load` — restore a previously saved snapshot, replacing all current state.
 - `score.load_midi` — import a MIDI file as voices (`voice-0`, `voice-1`, …) and set tempo from the file. Existing voices are preserved; call `score.clear` first for a clean slate. Black keys come back as sharps — re-spell with `transform.transpose` if needed. `path` is absolute or relative to the server working directory.
+- `score.load_abc` — parse an ABC notation string into a voice. Headers `T:` (title), `L:` (default note length), `M:` (meter), `Q:` (tempo), `K:` (key) are all read. The voice is named after the `T:` field (lowercased, spaces → underscores). Key-signature accidentals apply automatically and persist within each measure; explicit accidentals (`^`, `_`, `=`) override for the remainder of the bar. Octave markers `'` (raise) and `,` (lower) are supported. Tied notes (`-`) are merged into one longer note. Use to load folk tunes from The Session (thesession.org) or any ABC corpus. Existing voices are preserved; call `score.clear` first for a clean slate.
 
 ## Available Instruments
 

@@ -113,6 +113,7 @@ public final class MusicMcpTools {
         builder.tool(scoreSaveTool(provider));
         builder.tool(scoreLoadTool(provider));
         builder.tool(scoreLoadMidiTool(provider));
+        builder.tool(scoreLoadAbcTool(provider));
     }
 
     // --- Tool factory methods ---
@@ -942,6 +943,22 @@ public final class MusicMcpTools {
                 Map.of("path", strProp("Path to the MIDI file, e.g. 'generated_tracks/1_my_song/my_song.mid'")),
                 List.of("path")),
             (ctx, args) -> SaveLoadTools.loadMidi(ctx, str(args, "path")));
+    }
+
+    private static McpTool scoreLoadAbcTool(final CompositionContextProvider provider) {
+        return tool(provider, "score.load_abc",
+            "Parse an ABC notation string into a voice and add it to the current composition. " +
+                "ABC notation is a text format widely used for folk and traditional music " +
+                "(thesession.org, abcnotation.com have 400k+ tunes). " +
+                "Supports: T:/L:/M:/K:/Q: headers, accidentals (^=sharp, _=flat, ==natural), " +
+                "octave markers (' raises, , lowers), length multipliers (A2, A/, A3/2), " +
+                "ties (-), bar lines, and repeats. " +
+                "Sets tempo from Q: if present. Voice is named after the T: title field. " +
+                "Existing voices are not cleared — call score.clear first if you want a fresh start.",
+            buildObjectSchema(
+                Map.of("abc", strProp("Full ABC notation string, e.g. 'X:1\\nT:My Tune\\nL:1/8\\nK:G\\nGABc|...'")),
+                List.of("abc")),
+            (ctx, args) -> SaveLoadTools.loadAbc(ctx, str(args, "abc")));
     }
 
     // --- Tool plumbing ---
