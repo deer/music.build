@@ -18,7 +18,6 @@ import build.music.time.Tempo;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.List;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaMessage;
@@ -27,7 +26,6 @@ import javax.sound.midi.Sequence;
 import javax.sound.midi.ShortMessage;
 import javax.sound.midi.Track;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -232,7 +230,8 @@ class MidiRendererTests {
         return null;
     }
 
-    private record MarkerEntry(String name, long tick) { }
+    private record MarkerEntry(String name, long tick) {
+    }
 
     private static List<MarkerEntry> collectMarkers(final Track track) {
         final List<MarkerEntry> result = new java.util.ArrayList<>();
