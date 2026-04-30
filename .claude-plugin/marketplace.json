@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "music.build",
+  "description": "Plugins for composing music with AI",
+  "owner": {
+    "name": "Reed von Redwitz",
+    "email": "reed@music.build"
+  },
+  "plugins": [
+    {
+      "name": "compose",
+      "description": "Skills for composing with the music-server MCP tools",
+      "source": "./plugins/compose"
+    }
+  ]
+}
