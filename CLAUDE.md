@@ -21,7 +21,7 @@ Always use `./mvnw` (never bare `mvn`).
 
 ## Key Files
 
-- `skills/music-composition/SKILL.md` — primary AI agent reference: note DSL, all 47 tools, patterns
+- `plugins/compose/skills/music-composition/SKILL.md` — primary AI agent reference: note DSL, all 47 tools, patterns
 - `music-mcp/src/main/java/build/music/mcp/CompositionContext.java` — single mutable session state
 - `music-server/src/main/java/build/music/server/MusicMcpServer.java` — all 47 tool registrations
 
