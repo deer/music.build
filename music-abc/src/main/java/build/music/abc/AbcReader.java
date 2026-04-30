@@ -2,11 +2,14 @@ package build.music.abc;
 
 import build.base.parsing.Filter;
 import build.base.parsing.Scanner;
+import build.music.core.Chord;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
 import build.music.core.Rest;
+import build.music.core.Velocity;
 import build.music.pitch.Accidental;
 import build.music.pitch.NoteName;
+import build.music.pitch.Pitch;
 import build.music.pitch.SpelledPitch;
 import build.music.score.Voice;
 import build.music.time.Fraction;
@@ -15,6 +18,7 @@ import build.music.time.Tempo;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -22,9 +26,10 @@ import java.util.regex.Pattern;
 /**
  * Parses ABC notation into Voice objects.
  * <p>
- * Supported: single-voice tunes, M:/L:/T:/K:/Q: headers, bar lines,
- * repeats, ties, dotted notes, octave markers (' and ,), accidentals.
- * Not supported: chords ({@code [CEG]}), grace notes ({@code {...}}), tuplets, {@code >} {@code <} dotted shorthand.
+ * Supported: single and multi-voice tunes (V: headers), M:/L:/T:/K:/Q: headers,
+ * bar lines, repeats, ties, dotted notes, octave markers (' and ,), accidentals,
+ * chord events ([CEG]), tuplets ((3, (p:q:r)).
+ * Not supported: grace notes ({...}), {@code >} {@code <} dotted shorthand.
  */
 public final class AbcReader {
 
@@ -68,22 +73,51 @@ public final class AbcReader {
             }
         }
 
-        final StringBuilder body = new StringBuilder();
+        // Build per-voice body content, splitting on V: lines in the body
+        final String defaultVoiceName = title.isBlank() ? "voice" : title.toLowerCase().replace(' ', '_');
+        final List<String> voiceOrder = new ArrayList<>();
+        final Map<String, StringBuilder> voiceBodies = new LinkedHashMap<>();
+        String currentVoice = defaultVoiceName;
+        voiceOrder.add(currentVoice);
+        voiceBodies.put(currentVoice, new StringBuilder());
+
         for (int i = bodyStart; i < lines.length; i++) {
             String line = lines[i];
             final int pct = line.indexOf('%');
             if (pct >= 0) {
                 line = line.substring(0, pct);
             }
+            final String trimmedLine = line.trim();
+            if (trimmedLine.startsWith("V:")) {
+                final String vSpec = trimmedLine.substring(2).trim();
+                final String vName = vSpec.split("\\s+")[0].toLowerCase();
+                currentVoice = vName.isEmpty() ? defaultVoiceName : vName;
+                if (!voiceBodies.containsKey(currentVoice)) {
+                    voiceOrder.add(currentVoice);
+                    voiceBodies.put(currentVoice, new StringBuilder());
+                }
+                continue;
+            }
             if (line.endsWith("\\")) {
                 line = line.substring(0, line.length() - 1);
             }
-            body.append(line).append(' ');
+            voiceBodies.get(currentVoice).append(line).append(' ');
         }
 
-        final List<NoteEvent> events = parseBody(body.toString(), defaultLength, keyAccidentals);
-        final String voiceName = title.isBlank() ? "voice" : title.toLowerCase().replace(' ', '_');
-        return new AbcImport(List.of(Voice.of(voiceName, events)), tempo, title);
+        final List<Voice> voices = new ArrayList<>();
+        for (final String vName : voiceOrder) {
+            final List<NoteEvent> events = parseBody(
+                voiceBodies.get(vName).toString(), defaultLength, keyAccidentals);
+            if (!events.isEmpty()) {
+                voices.add(Voice.of(vName, events));
+            }
+        }
+
+        if (voices.isEmpty()) {
+            voices.add(Voice.of(defaultVoiceName, List.of()));
+        }
+
+        return new AbcImport(Collections.unmodifiableList(voices), tempo, title);
     }
 
     @SuppressWarnings("checkstyle:CyclomaticComplexity")
@@ -95,6 +129,8 @@ public final class AbcReader {
         final List<NoteEvent> events = new ArrayList<>();
         final Map<NoteName, Accidental> measureAccidentals = new EnumMap<>(NoteName.class);
         boolean tieNext = false;
+        int tupletRemaining = 0;
+        Fraction tupletMultiplier = Fraction.of(1, 1);
 
         try (var sc = new Scanner(body).register(Filter.WHITESPACE)) {
             while (sc.hasNext()) {
@@ -126,7 +162,12 @@ public final class AbcReader {
                 // Tuplet (3, (3:2:3 — open paren followed by a digit
                 if (sc.follows(Pattern.compile("\\([0-9]"))) {
                     sc.consume(1); // (
-                    sc.skipWhile(Pattern.compile("[0-9:]"));
+                    final String spec = sc.consumeWhile(Pattern.compile("[0-9:]"));
+                    final String[] parts = spec.split(":");
+                    final int p = Integer.parseInt(parts[0]);
+                    final int q = parts.length >= 2 ? Integer.parseInt(parts[1]) : defaultTupletQ(p);
+                    tupletRemaining = parts.length >= 3 ? Integer.parseInt(parts[2]) : p;
+                    tupletMultiplier = Fraction.of(q, p);
                     continue;
                 }
 
@@ -144,11 +185,18 @@ public final class AbcReader {
                     continue;
                 }
 
-                // Chord [CEG] — skip (single-voice scope; [| is handled below)
+                // Chord [CEG] — parse pitches, emit Chord event; [| is handled below
                 if (sc.follows("[") && !sc.follows("[|")) {
-                    sc.consume(1); // [
-                    sc.skipUntil("]");
-                    sc.skip("]");
+                    final List<Pitch> pitches = parseChordPitches(sc, measureAccidentals, keyAccidentals);
+                    final Fraction dur = readLength(sc, defaultLength);
+                    final Fraction actualDur = applyTuplet(dur, tupletRemaining > 0, tupletMultiplier);
+                    if (tupletRemaining > 0) {
+                        tupletRemaining--;
+                    }
+                    if (!pitches.isEmpty()) {
+                        events.add(Chord.of(pitches, new FractionDuration(actualDur), Velocity.MF));
+                    }
+                    tieNext = false;
                     continue;
                 }
 
@@ -203,8 +251,12 @@ public final class AbcReader {
                 if (sc.follows("z") || sc.follows("x")) {
                     sc.consume(1);
                     final Fraction dur = readLength(sc, defaultLength);
+                    final Fraction actualDur = applyTuplet(dur, tupletRemaining > 0, tupletMultiplier);
+                    if (tupletRemaining > 0) {
+                        tupletRemaining--;
+                    }
                     tieNext = false;
-                    events.add(Rest.of(new FractionDuration(dur)));
+                    events.add(Rest.of(new FractionDuration(actualDur)));
                     continue;
                 }
 
@@ -220,6 +272,10 @@ public final class AbcReader {
                     octave -= sc.consumeWhile(Pattern.compile(",")).length();
 
                     final Fraction dur = readLength(sc, defaultLength);
+                    final Fraction actualDur = applyTuplet(dur, tupletRemaining > 0, tupletMultiplier);
+                    if (tupletRemaining > 0) {
+                        tupletRemaining--;
+                    }
 
                     final Accidental acc;
                     if (explicit != null) {
@@ -237,7 +293,7 @@ public final class AbcReader {
                     if (tieNext && !events.isEmpty()
                         && events.get(events.size() - 1) instanceof Note prevNote
                         && prevNote.pitch().spelled().equals(pitch)) {
-                        final Fraction merged = ((FractionDuration) prevNote.duration()).fraction().add(dur);
+                        final Fraction merged = ((FractionDuration) prevNote.duration()).fraction().add(actualDur);
                         events.set(events.size() - 1, Note.of(pitch, new FractionDuration(merged)));
                         tieNext = sc.follows("-");
                         if (tieNext) {
@@ -246,7 +302,7 @@ public final class AbcReader {
                         continue;
                     }
 
-                    events.add(Note.of(pitch, new FractionDuration(dur)));
+                    events.add(Note.of(pitch, new FractionDuration(actualDur)));
                     tieNext = sc.follows("-");
                     if (tieNext) {
                         sc.consume(1);
@@ -262,6 +318,77 @@ public final class AbcReader {
         }
 
         return Collections.unmodifiableList(events);
+    }
+
+    private static List<Pitch> parseChordPitches(final Scanner sc,
+                                                 final Map<NoteName, Accidental> measureAccidentals,
+                                                 final Map<NoteName, Accidental> keyAccidentals) {
+
+        sc.consume(1); // [
+        final List<Pitch> pitches = new ArrayList<>();
+        while (sc.hasNext() && !sc.follows("]")) {
+            Accidental chordAcc = null;
+            if (sc.follows("^")) {
+                sc.consume(1);
+                if (sc.follows("^")) {
+                    sc.consume(1);
+                    chordAcc = Accidental.DOUBLE_SHARP;
+                } else {
+                    chordAcc = Accidental.SHARP;
+                }
+            } else if (sc.follows("_")) {
+                sc.consume(1);
+                if (sc.follows("_")) {
+                    sc.consume(1);
+                    chordAcc = Accidental.DOUBLE_FLAT;
+                } else {
+                    chordAcc = Accidental.FLAT;
+                }
+            } else if (sc.follows("=")) {
+                sc.consume(1);
+                chordAcc = Accidental.NATURAL;
+            }
+
+            final var cn = sc.optionallyConsume(Pattern.compile("[A-Ga-g]"));
+            if (cn.isEmpty()) {
+                sc.consume(1);
+                continue;
+            }
+            final char cc = cn.get().charAt(0);
+            final int baseOct = Character.isUpperCase(cc) ? 3 : 4;
+            final NoteName cName = charToNoteName(cc);
+            int cOctave = baseOct;
+            cOctave += sc.consumeWhile(Pattern.compile("'")).length();
+            cOctave -= sc.consumeWhile(Pattern.compile(",")).length();
+            sc.optionallyConsume(LENGTH_PATTERN); // per-note lengths inside chord are ignored
+
+            final Accidental cAcc = chordAcc != null ? chordAcc
+                : measureAccidentals.getOrDefault(cName,
+                keyAccidentals.getOrDefault(cName, Accidental.NATURAL));
+            pitches.add(SpelledPitch.of(cName, cAcc, cOctave));
+        }
+        if (sc.follows("]")) {
+            sc.skip("]");
+        }
+        return pitches;
+    }
+
+    private static Fraction applyTuplet(
+        final Fraction dur,
+        final boolean inTuplet,
+        final Fraction multiplier) {
+        return inTuplet ? dur.multiply(multiplier) : dur;
+    }
+
+    private static int defaultTupletQ(final int p) {
+        return switch (p) {
+            case 2 -> 3;
+            case 3 -> 2;
+            case 4 -> 3;
+            case 6 -> 2;
+            case 8 -> 3;
+            default -> 2;
+        };
     }
 
     private static final Pattern LENGTH_PATTERN = Pattern.compile("(?:[0-9]+/?[0-9]*|/[0-9]*)");
@@ -342,7 +469,6 @@ public final class AbcReader {
         final StringBuilder sb = new StringBuilder().append(tonic);
         int idx = 1;
 
-        // Check named flat-key tonics first (Bb, Eb, Ab, Db, Gb, Cb)
         if (idx < key.length() && key.charAt(idx) == 'b') {
             sb.append('b');
             idx++;
@@ -351,7 +477,6 @@ public final class AbcReader {
             idx++;
         }
 
-        // Check for minor mode suffix
         if (idx < key.length()) {
             final char next = key.charAt(idx);
             if ((next == 'm' || next == 'M') && !key.substring(idx).toLowerCase().startsWith("maj")) {

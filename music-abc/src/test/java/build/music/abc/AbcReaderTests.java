@@ -1,5 +1,6 @@
 package build.music.abc;
 
+import build.music.core.Chord;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
 import build.music.core.Rest;
@@ -192,5 +193,102 @@ class AbcReaderTests {
     void voiceNameDerivedFromTitle() {
         final AbcReader.AbcImport result = AbcReader.read(SIMPLE_TUNE);
         assertEquals("simple_scale", result.voices().get(0).name());
+    }
+
+    @Test
+    void chordEventParsed() {
+        final String tune =
+            "X:1\n" +
+                "L:1/4\n" +
+                "K:C\n" +
+                "[CEG]2 |\n";  // C-E-G chord, half note
+        final AbcReader.AbcImport result = AbcReader.read(tune);
+        final List<NoteEvent> events = result.voices().get(0).events();
+        assertEquals(1, events.size());
+        assertInstanceOf(Chord.class, events.get(0));
+        final Chord chord = (Chord) events.get(0);
+        assertEquals(3, chord.pitches().size());
+        assertEquals(Fraction.of(1, 2), ((FractionDuration) chord.duration()).fraction());
+    }
+
+    @Test
+    void chordPitchesCorrect() {
+        final String tune =
+            "X:1\n" +
+                "L:1/8\n" +
+                "K:C\n" +
+                "[CEG] |\n";
+        final AbcReader.AbcImport result = AbcReader.read(tune);
+        final Chord chord = (Chord) result.voices().get(0).events().get(0);
+        // pitches sorted by midi value: C3, E3, G3
+        assertEquals(NoteName.C, ((SpelledPitch) chord.pitches().get(0)).name());
+        assertEquals(NoteName.E, ((SpelledPitch) chord.pitches().get(1)).name());
+        assertEquals(NoteName.G, ((SpelledPitch) chord.pitches().get(2)).name());
+    }
+
+    @Test
+    void tupletScalesDuration() {
+        final String tune =
+            "X:1\n" +
+                "L:1/8\n" +
+                "K:C\n" +
+                "(3 C D E |\n";  // triplet: 3 eighths in the time of 2 → each note = 1/12
+        final AbcReader.AbcImport result = AbcReader.read(tune);
+        final List<NoteEvent> events = result.voices().get(0).events();
+        assertEquals(3, events.size());
+        // each written 1/8, scaled by 2/3 → 1/12
+        assertEquals(Fraction.of(1, 12), ((FractionDuration) ((Note) events.get(0)).duration()).fraction());
+        assertEquals(Fraction.of(1, 12), ((FractionDuration) ((Note) events.get(1)).duration()).fraction());
+        assertEquals(Fraction.of(1, 12), ((FractionDuration) ((Note) events.get(2)).duration()).fraction());
+    }
+
+    @Test
+    void tupletExplicitRatio() {
+        final String tune =
+            "X:1\n" +
+                "L:1/8\n" +
+                "K:C\n" +
+                "(5:4:5 C D E F G |\n";  // 5 notes in time of 4: each 1/8 → 4/40 = 1/10
+        final AbcReader.AbcImport result = AbcReader.read(tune);
+        final List<NoteEvent> events = result.voices().get(0).events();
+        assertEquals(5, events.size());
+        assertEquals(Fraction.of(1, 10), ((FractionDuration) ((Note) events.get(0)).duration()).fraction());
+    }
+
+    @Test
+    void multiVoiceParsed() {
+        final String tune =
+            "X:1\n" +
+                "T:Duet\n" +
+                "L:1/4\n" +
+                "K:C\n" +
+                "V:1\n" +
+                "C D E F |\n" +
+                "V:2\n" +
+                "G A B c |\n";
+        final AbcReader.AbcImport result = AbcReader.read(tune);
+        assertEquals(2, result.voices().size());
+        assertEquals("1", result.voices().get(0).name());
+        assertEquals("2", result.voices().get(1).name());
+        assertEquals(4, result.voices().get(0).events().size());
+        assertEquals(4, result.voices().get(1).events().size());
+    }
+
+    @Test
+    void multiVoiceNoteContent() {
+        final String tune =
+            "X:1\n" +
+                "L:1/4\n" +
+                "K:C\n" +
+                "V:soprano\n" +
+                "c d e f |\n" +
+                "V:bass\n" +
+                "C, D, E, F, |\n";
+        final AbcReader.AbcImport result = AbcReader.read(tune);
+        assertEquals(2, result.voices().size());
+        final Note firstSoprano = (Note) result.voices().get(0).events().get(0);
+        final Note firstBass = (Note) result.voices().get(1).events().get(0);
+        assertEquals(4, firstSoprano.pitch().spelled().octave()); // c = C4
+        assertEquals(2, firstBass.pitch().spelled().octave());    // C, = C2
     }
 }
