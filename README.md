@@ -46,7 +46,7 @@ PORT=4000 ./mvnw exec:java -pl music-server
 
 **Connect to Claude Code**
 
-If you're using [Claude Code](https://claude.ai/code), the project includes an `.mcp.json` that registers the server automatically. Start the server, open Claude Code in this directory, and approve the one-time trust prompt — after that the `music-server` tools are available in every session.
+If you're using [Claude Code](https://claude.ai/code), install the `compose` plugin from this repo's marketplace. It registers the MCP server and loads the composition skill automatically. Start the server, then open Claude Code in this directory — the `music-server` tools and skill are available in every session.
 
 **Connect to Claude Desktop**
 
