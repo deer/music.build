@@ -156,7 +156,8 @@ public final class SaveLoadTools {
 
     /**
      * Tool: score.load_abc — parse an ABC notation string into voices.
-     * Creates one voice from the tune body, named after the T: title field.
+     * Multi-voice files (V: headers) produce one voice per section; single-voice files
+     * produce one voice named after the T: title field.
      * Existing voices are not cleared — call score.clear first if you want a fresh start.
      *
      * @param abcText full ABC notation string including headers and body
