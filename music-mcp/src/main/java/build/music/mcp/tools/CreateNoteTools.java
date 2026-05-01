@@ -5,6 +5,7 @@ import build.music.core.Chord;
 import build.music.core.ControlChange;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
+import build.music.core.Ornament;
 import build.music.core.ProgramChange;
 import build.music.core.Rest;
 import build.music.core.Velocity;
@@ -78,6 +79,21 @@ public final class CreateNoteTools {
                 }
                 final String durPart = input.substring(close + 1, tokenEnd);
                 events.add(parseChordToken(pitchesStr, durPart));
+                i = tokenEnd;
+            } else if (input.charAt(i) == '{') {
+                // Grace note prefix: scan to closing } first, then rest of token until whitespace.
+                // Without this, "{G4 A4}B4/e" would be split at the space inside the braces.
+                final int close = input.indexOf('}', i);
+                if (close < 0) {
+                    throw new IllegalArgumentException(
+                        "Unclosed '{' in grace note prefix. Expected '{pitch ...}note/dur'.");
+                }
+                int tokenEnd = close + 1;
+                while (tokenEnd < input.length() && !Character.isWhitespace(input.charAt(tokenEnd))) {
+                    tokenEnd++;
+                }
+                final String token = input.substring(i, tokenEnd);
+                events.add(parseToken(token));
                 i = tokenEnd;
             } else {
                 // Regular token (note, rest, CC, or program change) — read until whitespace
@@ -188,17 +204,39 @@ public final class CreateNoteTools {
         }
     }
 
-    static NoteEvent parseToken(final String token) {
+    static NoteEvent parseToken(final String rawToken) {
+        // Grace prefix: {B4}A4/e or {G4 A4}B4/q
+        List<SpelledPitch> graceNotes = List.of();
+        String token = rawToken;
+        if (token.startsWith("{")) {
+            final int close = token.indexOf('}');
+            if (close < 0) {
+                throw new IllegalArgumentException(
+                    "Unclosed '{' in grace note prefix. Expected '{pitch ...}note/dur'. Got: '" + rawToken + "'.");
+            }
+            final String inside = token.substring(1, close).trim();
+            if (!inside.isEmpty()) {
+                final List<SpelledPitch> parsed = new ArrayList<>();
+                for (final String p : inside.split("\\s+")) {
+                    if (!p.isEmpty()) {
+                        parsed.add(SpelledPitch.parse(p));
+                    }
+                }
+                graceNotes = List.copyOf(parsed);
+            }
+            token = token.substring(close + 1);
+        }
+
         final int slash = token.lastIndexOf('/');
         if (slash < 0) {
             throw new IllegalArgumentException(
-                "Invalid note token '" + token + "'. Expected format 'pitch/duration' (e.g. 'C4/q' or 'r/h').");
+                "Invalid note token '" + rawToken + "'. Expected format 'pitch/duration' (e.g. 'C4/q' or 'r/h').");
         }
         final String pitchPart = token.substring(0, slash);
         final String afterSlash = token.substring(slash + 1);
 
         // Check for suffix(es) after ~
-        // Supported: ~stac, ~acc, ~ten, ~marc, ~leg, ~tie (and combinations: ~stac~tie)
+        // Supported: ~stac, ~acc, ~ten, ~marc, ~leg, ~tie, ~roll, ~trill, ~mord, ~prall (and combinations)
         final int tildeIdx = afterSlash.indexOf('~');
         final String durationCode = tildeIdx >= 0 ? afterSlash.substring(0, tildeIdx) : afterSlash;
         final String suffixStr = tildeIdx >= 0 ? afterSlash.substring(tildeIdx + 1) : "";
@@ -209,6 +247,7 @@ public final class CreateNoteTools {
         boolean tied = false;
         Articulation articulation = Articulation.NORMAL;
         Velocity velocity = Velocity.MF;
+        Ornament ornament = null;
         for (final String suffix : suffixStr.split("~")) {
             if (suffix.isEmpty()) {
                 continue;
@@ -222,6 +261,14 @@ public final class CreateNoteTools {
                     throw new IllegalArgumentException(
                         "Invalid velocity in '" + suffix + "'. Expected ~vel:N where N is 0-127.");
                 }
+            } else if (suffix.equalsIgnoreCase("roll")) {
+                ornament = Ornament.ROLL;
+            } else if (suffix.equalsIgnoreCase("trill")) {
+                ornament = Ornament.TRILL;
+            } else if (suffix.equalsIgnoreCase("mord")) {
+                ornament = Ornament.MORDENT;
+            } else if (suffix.equalsIgnoreCase("prall")) {
+                ornament = Ornament.PRALL;
             } else {
                 articulation = parseArticulation(suffix);
             }
@@ -231,7 +278,14 @@ public final class CreateNoteTools {
             return Rest.of(duration);
         }
         final SpelledPitch pitch = SpelledPitch.parse(pitchPart);
-        return Note.of(pitch, duration, velocity, articulation, tied);
+        Note note = Note.of(pitch, duration, velocity, articulation, tied);
+        if (ornament != null) {
+            note = note.withOrnament(ornament);
+        }
+        if (!graceNotes.isEmpty()) {
+            note = note.withGraceNotes(graceNotes);
+        }
+        return note;
     }
 
     static Duration parseDuration(final String code) {
@@ -285,14 +339,31 @@ public final class CreateNoteTools {
     static String formatEvent(final NoteEvent event) {
         return switch (event) {
             case Note n -> {
+                final StringBuilder grace = new StringBuilder();
+                if (!n.graceNotes().isEmpty()) {
+                    grace.append("{");
+                    for (int i = 0; i < n.graceNotes().size(); i++) {
+                        if (i > 0) {
+                            grace.append(" ");
+                        }
+                        grace.append(n.graceNotes().get(i).toString());
+                    }
+                    grace.append("}");
+                }
                 final String art = n.articulation() != Articulation.NORMAL
                     ? "~" + n.articulation().name().toLowerCase()
                     : "";
+                final String orn = n.ornament().map(o -> "~" + switch (o) {
+                    case ROLL -> "roll";
+                    case TRILL -> "trill";
+                    case MORDENT -> "mord";
+                    case PRALL -> "prall";
+                }).orElse("");
                 final String vel = n.velocity().value() != Velocity.MF.value()
                     ? "~vel:" + n.velocity().value()
                     : "";
                 final String tie = n.tied() ? "~tie" : "";
-                yield n.pitch().spelled().toString() + "/" + formatDuration(n.duration()) + art + vel + tie;
+                yield grace + n.pitch().spelled().toString() + "/" + formatDuration(n.duration()) + art + orn + vel + tie;
             }
             case Rest r -> "r/" + formatDuration(r.duration());
             case ControlChange cc -> "cc:" + cc.cc() + ":" + cc.value();

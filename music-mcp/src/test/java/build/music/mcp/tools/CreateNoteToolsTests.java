@@ -2,6 +2,7 @@ package build.music.mcp.tools;
 
 import build.music.core.Note;
 import build.music.core.NoteEvent;
+import build.music.core.Ornament;
 import build.music.core.Rest;
 import build.music.time.DottedValue;
 import build.music.time.RhythmicValue;
@@ -104,5 +105,69 @@ class CreateNoteToolsTests {
             () -> CreateNoteTools.parseNoteSequence(""));
         assertThrows(IllegalArgumentException.class,
             () -> CreateNoteTools.parseNoteSequence("   "));
+    }
+
+    @Test
+    void parseOrnamentSuffixes() {
+        Note roll = (Note) CreateNoteTools.parseToken("A4/e~roll");
+        Note trill = (Note) CreateNoteTools.parseToken("A4/e~trill");
+        Note mord = (Note) CreateNoteTools.parseToken("A4/e~mord");
+        Note prall = (Note) CreateNoteTools.parseToken("A4/e~prall");
+        assertEquals(Ornament.ROLL, roll.ornament().orElseThrow());
+        assertEquals(Ornament.TRILL, trill.ornament().orElseThrow());
+        assertEquals(Ornament.MORDENT, mord.ornament().orElseThrow());
+        assertEquals(Ornament.PRALL, prall.ornament().orElseThrow());
+    }
+
+    @Test
+    void parseGraceNotePrefix() {
+        Note n = (Note) CreateNoteTools.parseToken("{G4}A4/q");
+        assertEquals(69, n.midi()); // A4
+        assertEquals(1, n.graceNotes().size());
+        assertEquals(67, n.graceNotes().getFirst().midi()); // G4
+    }
+
+    @Test
+    void parseMultipleGraceNotes() {
+        Note n = (Note) CreateNoteTools.parseToken("{G4 A4}B4/e");
+        assertEquals(71, n.midi()); // B4
+        assertEquals(2, n.graceNotes().size());
+        assertEquals(67, n.graceNotes().get(0).midi()); // G4
+        assertEquals(69, n.graceNotes().get(1).midi()); // A4
+    }
+
+    @Test
+    void formatEventRoundTripsOrnament() {
+        Note n = (Note) CreateNoteTools.parseToken("A4/e~roll");
+        String formatted = CreateNoteTools.formatEvent(n);
+        assertTrue(formatted.contains("~roll"), "expected ~roll in: " + formatted);
+        assertTrue(formatted.contains("A4/e"), "expected pitch/dur in: " + formatted);
+    }
+
+    @Test
+    void formatEventRoundTripsGraceNotes() {
+        Note n = (Note) CreateNoteTools.parseToken("{G4}A4/q");
+        String formatted = CreateNoteTools.formatEvent(n);
+        assertTrue(formatted.startsWith("{G4}"), "expected grace prefix in: " + formatted);
+        assertTrue(formatted.contains("A4/q"), "expected main note in: " + formatted);
+    }
+
+    @Test
+    void parseMultipleGraceNotesInSequence() {
+        // Regression: multi-grace-note tokens were split by the whitespace tokenizer in parseNoteSequence
+        var events = CreateNoteTools.parseNoteSequence("A4/q {G4 A4}B4/e C5/q");
+        assertEquals(3, events.size());
+        Note grace = (Note) events.get(1);
+        assertEquals(71, grace.midi()); // B4
+        assertEquals(2, grace.graceNotes().size());
+        assertEquals(67, grace.graceNotes().get(0).midi()); // G4
+        assertEquals(69, grace.graceNotes().get(1).midi()); // A4
+    }
+
+    @Test
+    void unclosedGraceBraceThrows() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+            () -> CreateNoteTools.parseToken("{G4 A4/q"));
+        assertTrue(ex.getMessage().contains("Unclosed '{'"));
     }
 }
