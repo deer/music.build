@@ -4,8 +4,10 @@ import build.music.core.Chord;
 import build.music.core.ControlChange;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
+import build.music.core.Ornament;
 import build.music.core.ProgramChange;
 import build.music.pitch.Pitch;
+import build.music.pitch.SpelledPitch;
 import build.music.score.Part;
 import build.music.score.Score;
 import build.music.score.SectionMarker;
@@ -16,6 +18,7 @@ import build.music.time.TimeSignature;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiEvent;
@@ -126,12 +129,7 @@ public final class MidiRenderer {
                     } else {
                         soundingTicks = (long) (notatedTicks * n.articulation().durationFactor());
                     }
-                    final ShortMessage on = new ShortMessage();
-                    on.setMessage(ShortMessage.NOTE_ON, part.midiChannel(), n.midi(), n.velocity().value());
-                    track.add(new MidiEvent(on, actualOnTick));
-                    final ShortMessage off = new ShortMessage();
-                    off.setMessage(ShortMessage.NOTE_OFF, part.midiChannel(), n.midi(), 0);
-                    track.add(new MidiEvent(off, actualOnTick + soundingTicks));
+                    emitNote(track, part.midiChannel(), n, actualOnTick, soundingTicks, notatedTicks);
                 } else if (event instanceof ControlChange cc) {
                     final ShortMessage msg = new ShortMessage();
                     msg.setMessage(ShortMessage.CONTROL_CHANGE, part.midiChannel(), cc.cc(), cc.value());
@@ -199,12 +197,7 @@ public final class MidiRenderer {
             final long notatedTicks = fractionToTicks(event.duration().fraction());
             if (event instanceof Note n) {
                 final long soundingTicks = (long) (notatedTicks * n.articulation().durationFactor());
-                final ShortMessage on = new ShortMessage();
-                on.setMessage(ShortMessage.NOTE_ON, channel, n.midi(), n.velocity().value());
-                track.add(new MidiEvent(on, tick));
-                final ShortMessage off = new ShortMessage();
-                off.setMessage(ShortMessage.NOTE_OFF, channel, n.midi(), 0);
-                track.add(new MidiEvent(off, tick + soundingTicks));
+                emitNote(track, channel, n, tick, soundingTicks, notatedTicks);
             } else if (event instanceof ControlChange cc) {
                 final ShortMessage msg = new ShortMessage();
                 msg.setMessage(ShortMessage.CONTROL_CHANGE, channel, cc.cc(), cc.value());
@@ -235,6 +228,72 @@ public final class MidiRenderer {
      */
     static long fractionToTicks(final Fraction f) {
         return Math.round(f.toDouble() * 4.0 * TICKS_PER_QUARTER);
+    }
+
+    // ~50 ms at 120 BPM ≈ 32nd note (60 ticks at 480 PPQ)
+    private static final long GRACE_TICKS = TICKS_PER_QUARTER / 8;
+
+    private static void emitNote(
+        final Track track, final int channel, final Note n,
+        final long onTick, final long soundingTicks, final long notatedTicks)
+        throws InvalidMidiDataException {
+
+        final List<SpelledPitch> graceNotes = n.graceNotes();
+        final Optional<Ornament> ornament = n.ornament();
+
+        long cursor = onTick;
+        long remaining = soundingTicks;
+
+        if (!graceNotes.isEmpty()) {
+            final long perGrace = Math.min(GRACE_TICKS, remaining / (graceNotes.size() + 1));
+            for (final SpelledPitch gp : graceNotes) {
+                if (remaining <= perGrace) {
+                    break;
+                }
+                emitRaw(track, channel, gp.midi(), n.velocity().value(), cursor, perGrace);
+                cursor += perGrace;
+                remaining -= perGrace;
+            }
+        }
+
+        if (remaining <= 0) {
+            return;
+        }
+
+        final int midi = n.midi();
+        if (ornament.isEmpty()) {
+            emitRaw(track, channel, midi, n.velocity().value(), cursor, remaining);
+            return;
+        }
+
+        // Approximate ornament as rapid note pattern; use semitone neighbors when no pitch context
+        final int upper = midi + 2;
+        final int lower = midi - 1;
+        final int[] pattern = switch (ornament.get()) {
+            case ROLL -> new int[]{midi, upper, midi, lower, midi};
+            case TRILL -> new int[]{midi, upper, midi, upper, midi, upper, midi, upper, midi};
+            case MORDENT -> new int[]{midi, lower, midi};
+            case PRALL -> new int[]{midi, upper, midi};
+        };
+        final long perStep = remaining / pattern.length;
+        for (int i = 0; i < pattern.length; i++) {
+            final long stepTicks = (i == pattern.length - 1)
+                ? remaining - perStep * (pattern.length - 1)
+                : perStep;
+            emitRaw(track, channel, pattern[i], n.velocity().value(), cursor, stepTicks);
+            cursor += stepTicks;
+        }
+    }
+
+    private static void emitRaw(
+        final Track track, final int channel, final int midi, final int velocity,
+        final long onTick, final long durationTicks) throws InvalidMidiDataException {
+        final ShortMessage on = new ShortMessage();
+        on.setMessage(ShortMessage.NOTE_ON, channel, midi, velocity);
+        track.add(new MidiEvent(on, onTick));
+        final ShortMessage off = new ShortMessage();
+        off.setMessage(ShortMessage.NOTE_OFF, channel, midi, 0);
+        track.add(new MidiEvent(off, onTick + durationTicks));
     }
 
     private static void addTempo(final Track track, final long tick, final Tempo tempo) throws InvalidMidiDataException {

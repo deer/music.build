@@ -6,6 +6,7 @@ import build.music.core.ChordSymbol;
 import build.music.core.ControlChange;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
+import build.music.core.Ornament;
 import build.music.core.ProgramChange;
 import build.music.core.Rest;
 import build.music.harmony.KeySignature;
@@ -243,9 +244,17 @@ public final class LilyPondRenderer {
                     final NoteEvent te = events.get(k);
                     switch (te) {
                         case Note n -> {
+                            if (!n.graceNotes().isEmpty()) {
+                                sb.append("\\grace { ");
+                                for (final SpelledPitch gp : n.graceNotes()) {
+                                    sb.append(renderPitch(gp)).append("16 ");
+                                }
+                                sb.append("}");
+                            }
                             sb.append(renderPitch(n.pitch().spelled()));
                             sb.append(tupletBase);
                             sb.append(renderArticulation(n.articulation()));
+                            n.ornament().ifPresent(o -> sb.append(renderOrnament(o)));
                             if (n.tied()) {
                                 sb.append("~");
                             }
@@ -292,9 +301,17 @@ public final class LilyPondRenderer {
             // Normal (non-tuplet) event
             switch (event) {
                 case Note n -> {
+                    if (!n.graceNotes().isEmpty()) {
+                        sb.append("\\grace { ");
+                        for (final SpelledPitch gp : n.graceNotes()) {
+                            sb.append(renderPitch(gp)).append("16 ");
+                        }
+                        sb.append("}");
+                    }
                     sb.append(renderPitch(n.pitch().spelled()));
                     sb.append(renderDuration(n.duration().fraction()));
                     sb.append(renderArticulation(n.articulation()));
+                    n.ornament().ifPresent(o -> sb.append(renderOrnament(o)));
                     if (n.tied()) {
                         sb.append("~");
                     }
@@ -468,6 +485,15 @@ public final class LilyPondRenderer {
             case MARCATO -> "-^";
             case PORTATO -> "-_";
             case NORMAL, LEGATO -> "";
+        };
+    }
+
+    static String renderOrnament(final Ornament ornament) {
+        return switch (ornament) {
+            case ROLL    -> "\\trill";
+            case TRILL   -> "\\trill";
+            case MORDENT -> "\\mordent";
+            case PRALL   -> "\\prall";
         };
     }
 

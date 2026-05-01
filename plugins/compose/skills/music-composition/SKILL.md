@@ -79,6 +79,29 @@ C4/q~stac D4/q E4/h     # staccato C, normal D and E
 
 Use `voice.set_articulation` to apply an articulation to an entire voice at once.
 
+**Ornaments** — append `~code` after the duration (combinable with articulations and `~vel:N`):
+| Suffix   | Ornament          | LilyPond glyph | MIDI approximation              |
+|----------|-------------------|----------------|---------------------------------|
+| `~roll`  | roll (Irish/folk) | `\trill`       | main–upper–main–lower–main      |
+| `~trill` | trill             | `\trill`       | rapid main–upper alternation    |
+| `~mord`  | mordent (lower)   | `\mordent`     | main–lower–main                 |
+| `~prall` | pralltriller      | `\prall`       | main–upper–main                 |
+
+```
+A4/e~roll      # rolled A eighth — classic Irish jig ornament
+B4/q~trill     # trilled B quarter
+G4/e~mord      # mordent on G eighth
+```
+
+MIDI uses semitone neighbors as pitch approximation (upper = +2, lower = −1). For accurate neighbor pitches, use explicit grace notes instead.
+
+**Grace notes** — prefix `{pitch ...}` before the main note token. Pitches are space-separated; use standard pitch notation:
+```
+{G4}A4/q        # single grace note G before A quarter
+{G4 A4}B4/e     # two grace notes before B eighth
+```
+Grace notes steal time from the front of the main note's sounding duration (~32nd note each). They appear as `\grace { ... }` in LilyPond.
+
 **Control Change (CC) events** — point-in-time MIDI controller values placed inline in a voice sequence. Zero duration; do not advance time. MIDI only — invisible to LilyPond/MusicXML.
 ```
 cc:pan:64          → center pan (CC 10, value 64)

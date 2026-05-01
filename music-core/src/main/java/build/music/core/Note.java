@@ -17,7 +17,9 @@ import build.music.time.Duration;
 import build.music.time.RhythmicValue;
 
 import java.lang.invoke.MethodHandles;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public final class Note
@@ -96,6 +98,14 @@ public final class Note
         return hasTrait(TiedMarker.class);
     }
 
+    public Optional<Ornament> ornament() {
+        return getTrait(Ornament.class);
+    }
+
+    public List<SpelledPitch> graceNotes() {
+        return getTrait(GraceNotes.class).map(GraceNotes::pitches).orElse(List.of());
+    }
+
     // ── derived ───────────────────────────────────────────────────────────────
 
     public int midi() {
@@ -116,6 +126,22 @@ public final class Note
 
     public Note withTied(final boolean tied) {
         return Note.of(pitch(), duration(), velocity(), articulation(), tied);
+    }
+
+    public Note withOrnament(final Ornament ornament) {
+        final Note n = Note.of(pitch(), duration(), velocity(), articulation(), tied());
+        n.addTrait(ornament);
+        getTrait(GraceNotes.class).ifPresent(n::addTrait);
+        return n;
+    }
+
+    public Note withGraceNotes(final List<SpelledPitch> pitches) {
+        final Note n = Note.of(pitch(), duration(), velocity(), articulation(), tied());
+        ornament().ifPresent(n::addTrait);
+        if (!pitches.isEmpty()) {
+            n.addTrait(new GraceNotes(pitches));
+        }
+        return n;
     }
 
     // ── Object ───────────────────────────────────────────────────────────────
