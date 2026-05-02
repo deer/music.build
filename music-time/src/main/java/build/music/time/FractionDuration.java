@@ -1,16 +1,17 @@
-package build.music.abc;
+package build.music.time;
 
 import build.base.marshalling.Marshal;
 import build.base.marshalling.Marshalling;
 import build.base.marshalling.Out;
 import build.base.marshalling.Unmarshal;
-import build.music.time.Duration;
-import build.music.time.Fraction;
-import build.music.time.Tempo;
 
 import java.lang.invoke.MethodHandles;
 
-record FractionDuration(Fraction fraction) implements Duration {
+/**
+ * A Duration backed by an arbitrary Fraction, for durations that don't map to a standard RhythmicValue.
+ * Used by MidiReader and AbcReader when tick or beam durations don't snap to a named value.
+ */
+public record FractionDuration(Fraction fraction) implements Duration {
 
     @Unmarshal
     public FractionDuration {

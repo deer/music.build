@@ -6,6 +6,7 @@ import build.music.core.Note;
 import build.music.core.NoteEvent;
 import build.music.core.ProgramChange;
 import build.music.core.Rest;
+import build.music.pitch.Pitch;
 import build.music.pitch.SpelledPitch;
 
 import java.util.List;
@@ -77,7 +78,12 @@ public final class DiatonicTranspose {
                 yield (NoteEvent) Note.of(newPitch, n.duration(), n.velocity(), n.articulation(), n.tied());
             }
             case Rest r -> r;
-            case Chord c -> c;
+            case Chord c -> {
+                final List<Pitch> transposed = c.pitches().stream()
+                    .map(p -> (Pitch) transpose(p.spelled(), key, steps))
+                    .toList();
+                yield Chord.of(transposed, c.duration(), c.velocity());
+            }
             case ControlChange cc -> cc;
             case ProgramChange pc -> pc;
         }).toList();

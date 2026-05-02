@@ -43,10 +43,11 @@ public record TimeSignature(int beats, int beatUnit) implements Trait {
     }
 
     /**
-     * True for 6/8, 9/8, 12/8 etc — beats divisible by 3 with 8th-note beat unit.
+     * True for 6/8, 9/8, 12/8, 6/4 etc — beats divisible by 3 and greater than 3.
+     * 3/4 and 3/8 are simple triple, not compound.
      */
     public boolean isCompound() {
-        return beats % 3 == 0 && beatUnit == 8;
+        return beats % 3 == 0 && beats > 3;
     }
 
     /**

@@ -7,9 +7,8 @@ import build.codemodel.foundation.descriptor.Trait;
  * Tuplet, ScaledDuration, FractionDuration) slot directly into the trait map of note-event Traitables.
  * A note event carries exactly one Duration trait (@Singular enforced at the concrete type level).
  *
- * <p>Not sealed: {@code ScaledDuration} lives in {@code music-transform} and {@code FractionDuration}
- * lives in {@code music-midi} — Java sealed interfaces cannot have permitted types in a different
- * JPMS module.
+ * <p>Not sealed: {@code ScaledDuration} lives in {@code music-transform} — Java sealed interfaces
+ * cannot have permitted types in a different JPMS module.
  */
 public interface Duration extends Trait {
     /**
