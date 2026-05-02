@@ -12,6 +12,7 @@ import build.music.score.Part;
 import build.music.score.Score;
 import build.music.score.SectionMarker;
 import build.music.score.Voice;
+import build.music.time.ExpressionCurve;
 import build.music.time.Fraction;
 import build.music.time.RhythmicValue;
 import build.music.time.Tempo;
@@ -242,5 +243,36 @@ class MidiRendererTests {
             }
         }
         return result;
+    }
+
+    @Test
+    void expressionCurveEmitsCC11EventsAtBarBoundaries() throws InvalidMidiDataException {
+        // 16 quarter notes = 4 bars of 4/4
+        final List<NoteEvent> notes = java.util.Collections.nCopies(16, C4Q);
+        final ExpressionCurve curve = new ExpressionCurve(1, 4, 40, 100, "linear");
+        final Voice voice = Voice.of("melody", notes).withExpressionCurve(curve);
+        final var score = Score.builder("Test").part(Part.piano("melody", voice)).build();
+
+        final Sequence seq = MidiRenderer.render(score);
+        final Track partTrack = seq.getTracks()[1];
+
+        // Collect CC 11 events: tick → value
+        final java.util.Map<Long, Integer> cc11 = new java.util.LinkedHashMap<>();
+        for (int i = 0; i < partTrack.size(); i++) {
+            final var msg = partTrack.get(i).getMessage();
+            if (msg instanceof ShortMessage sm
+                && sm.getCommand() == ShortMessage.CONTROL_CHANGE
+                && sm.getData1() == 11) {
+                cc11.put(partTrack.get(i).getTick(), sm.getData2());
+            }
+        }
+
+        // 4/4 at 480 PPQ → ticksPerBar = 1920
+        // Linear from 40 to 100 over 4 bars: 40, 60, 80, 100
+        assertEquals(4, cc11.size(), "one CC 11 per bar");
+        assertEquals(40, cc11.get(0L), "bar 1 expression");
+        assertEquals(60, cc11.get(1920L), "bar 2 expression");
+        assertEquals(80, cc11.get(3840L), "bar 3 expression");
+        assertEquals(100, cc11.get(5760L), "bar 4 expression");
     }
 }

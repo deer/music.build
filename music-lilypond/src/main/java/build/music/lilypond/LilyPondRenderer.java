@@ -490,10 +490,10 @@ public final class LilyPondRenderer {
 
     static String renderOrnament(final Ornament ornament) {
         return switch (ornament) {
-            case ROLL    -> "\\trill";
-            case TRILL   -> "\\trill";
+            case ROLL -> "\\trill";
+            case TRILL -> "\\trill";
             case MORDENT -> "\\mordent";
-            case PRALL   -> "\\prall";
+            case PRALL -> "\\prall";
         };
     }
 

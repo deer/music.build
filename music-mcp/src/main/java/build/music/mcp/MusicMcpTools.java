@@ -82,6 +82,7 @@ public final class MusicMcpTools {
         // Per-voice settings
         builder.tool(voiceSetDynamicsTool(provider));
         builder.tool(voiceSetArticulationTool(provider));
+        builder.tool(voiceAddExpressionCurveTool(provider));
         // Advanced voice operations
         builder.tool(voiceConcatTool(provider));
         builder.tool(voiceRepeatTool(provider));
@@ -629,6 +630,35 @@ public final class MusicMcpTools {
             (ctx, args) -> VoiceTools.setArticulation(ctx, str(args, "voice"), str(args, "articulation"),
                 args.has("from_bar") ? args.get("from_bar").asInt() : null,
                 args.has("to_bar") ? args.get("to_bar").asInt() : null)
+        );
+    }
+
+    private static McpTool voiceAddExpressionCurveTool(final CompositionContextProvider provider) {
+        return tool(provider,
+            "voice.add_expression_curve",
+            "Add a gradual CC 11 (expression) curve to a voice. " +
+                "The renderer interpolates CC 11 events at each bar boundary between startBar and endBar. " +
+                "Values are MIDI CC range 0–127 (0=silent, 127=full). " +
+                "curve: 'linear' for equal steps, 'exponential' for a more natural swell. " +
+                "Example: crescendo 'melody' from pp (30) to ff (110) over bars 9–16.",
+            buildObjectSchema(
+                Map.of(
+                    "voice", strProp("Name of the voice"),
+                    "start_bar", intProp("First bar of the curve (1-based)"),
+                    "end_bar", intProp("Last bar of the curve (inclusive)"),
+                    "from_value", intProp("CC 11 value at start_bar (0–127)"),
+                    "to_value", intProp("CC 11 value at end_bar (0–127)"),
+                    "curve", strProp("Shape: 'linear' or 'exponential'")
+                ),
+                List.of("voice", "start_bar", "end_bar", "from_value", "to_value", "curve")),
+            (ctx, args) -> VoiceTools.addExpressionCurve(
+                ctx,
+                str(args, "voice"),
+                args.get("start_bar").asInt(),
+                args.get("end_bar").asInt(),
+                args.get("from_value").asInt(),
+                args.get("to_value").asInt(),
+                str(args, "curve"))
         );
     }
 

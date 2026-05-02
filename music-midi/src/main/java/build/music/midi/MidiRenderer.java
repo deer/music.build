@@ -11,6 +11,7 @@ import build.music.pitch.SpelledPitch;
 import build.music.score.Part;
 import build.music.score.Score;
 import build.music.score.SectionMarker;
+import build.music.time.ExpressionCurve;
 import build.music.time.Fraction;
 import build.music.time.Tempo;
 import build.music.time.TempoChange;
@@ -165,6 +166,18 @@ public final class MidiRenderer {
                 // Advance time (including absorbed tie continuations)
                 tick += notatedTicks;
             }
+
+            // Emit CC 11 (expression) events for each expression curve on this voice
+            for (final ExpressionCurve ec : part.voice().expressionCurves()) {
+                final int[] values = ec.interpolatedValues();
+                for (int i = 0; i < values.length; i++) {
+                    final long barTick = (long) (ec.startBar() - 1 + i) * ticksPerMeasure;
+                    final ShortMessage cc11 = new ShortMessage();
+                    cc11.setMessage(ShortMessage.CONTROL_CHANGE, part.midiChannel(), 11, values[i]);
+                    track.add(new MidiEvent(cc11, barTick));
+                }
+            }
+
             addEndOfTrack(track, tick);
         }
 

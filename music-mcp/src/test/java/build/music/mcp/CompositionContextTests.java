@@ -5,6 +5,7 @@ import build.music.core.NoteEvent;
 import build.music.core.Rest;
 import build.music.pitch.SpelledPitch;
 import build.music.score.Score;
+import build.music.time.ExpressionCurve;
 import build.music.time.RhythmicValue;
 import build.music.time.Tempo;
 import org.junit.jupiter.api.BeforeEach;
@@ -135,6 +136,24 @@ class CompositionContextTests {
         assertEquals("Untitled", ctx.getTitle());
         assertTrue(ctx.voiceNames().isEmpty());
         assertTrue(ctx.motifNames().isEmpty());
+    }
+
+    @Test
+    void expressionCurveSurvivesSnapshotRoundTrip() {
+        ctx.createVoice("melody", List.of(
+            Note.of(SpelledPitch.parse("C4"), RhythmicValue.QUARTER)
+        ));
+        ctx.addExpressionCurve("melody", new ExpressionCurve(1, 4, 20, 100, "linear"));
+
+        final var snapshot = ctx.snapshot();
+        ctx.clear();
+        ctx.restoreFrom(snapshot);
+
+        final Score restored = ctx.buildScore();
+        final var curves = restored.scoreParts().getFirst().voice().expressionCurves();
+        assertEquals(1, curves.size(), "expression curve must survive save/load");
+        assertEquals(20, curves.getFirst().fromValue());
+        assertEquals(100, curves.getFirst().toValue());
     }
 
     @Test
