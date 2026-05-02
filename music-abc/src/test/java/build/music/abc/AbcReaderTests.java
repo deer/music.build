@@ -9,6 +9,7 @@ import build.music.pitch.NoteName;
 import build.music.pitch.SpelledPitch;
 import build.music.score.Voice;
 import build.music.time.Fraction;
+import build.music.time.FractionDuration;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

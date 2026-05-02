@@ -13,6 +13,7 @@ import build.music.pitch.Pitch;
 import build.music.pitch.SpelledPitch;
 import build.music.score.Voice;
 import build.music.time.Fraction;
+import build.music.time.FractionDuration;
 import build.music.time.Tempo;
 
 import java.util.ArrayList;

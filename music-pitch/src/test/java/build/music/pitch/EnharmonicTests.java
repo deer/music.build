@@ -15,9 +15,9 @@ class EnharmonicTests {
     }
 
     @Test
-    void c4_andC4_areNotEnharmonic() {
+    void c4_andC4_areEnharmonic() {
         var c4 = SpelledPitch.of(NoteName.C, Accidental.NATURAL, 4);
-        assertFalse(Enharmonic.areEnharmonic(c4, c4));
+        assertTrue(Enharmonic.areEnharmonic(c4, c4));
     }
 
     @Test

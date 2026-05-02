@@ -9,7 +9,7 @@ public final class Enharmonic {
     }
 
     public static boolean areEnharmonic(final SpelledPitch a, final SpelledPitch b) {
-        return a.midi() == b.midi() && !a.equals(b);
+        return a.midi() == b.midi();
     }
 
     public static SpelledPitch simplify(final SpelledPitch pitch) {

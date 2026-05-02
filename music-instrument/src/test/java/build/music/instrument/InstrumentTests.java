@@ -1,7 +1,9 @@
 package build.music.instrument;
 
+import build.music.core.Chord;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
+import build.music.core.Velocity;
 import build.music.pitch.SpelledPitch;
 import build.music.time.RhythmicValue;
 import org.junit.jupiter.api.Test;
@@ -55,6 +57,34 @@ class InstrumentTests {
             Note.of(SpelledPitch.parse("G4"), RhythmicValue.QUARTER)
         );
         List<Integer> violations = Instruments.FLUTE.outOfRangeNotes(events);
+        assertEquals(List.of(1), violations);
+    }
+
+    @Test
+    void canPlay_chordInRange() {
+        Chord chord = Chord.of(
+            List.of(SpelledPitch.parse("C4"), SpelledPitch.parse("E4"), SpelledPitch.parse("G4")),
+            RhythmicValue.WHOLE, Velocity.MF);
+        assertTrue(Instruments.FLUTE.canPlay(List.of(chord)));
+    }
+
+    @Test
+    void canPlay_chordWithOutOfRangePitch() {
+        Chord chord = Chord.of(
+            List.of(SpelledPitch.parse("C4"), SpelledPitch.parse("C2")),
+            RhythmicValue.WHOLE, Velocity.MF);
+        assertFalse(Instruments.FLUTE.canPlay(List.of(chord)));
+    }
+
+    @Test
+    void outOfRangeNotes_flagsChordWithOutOfRangePitch() {
+        Chord badChord = Chord.of(
+            List.of(SpelledPitch.parse("C4"), SpelledPitch.parse("C2")),
+            RhythmicValue.WHOLE, Velocity.MF);
+        Chord goodChord = Chord.of(
+            List.of(SpelledPitch.parse("D4"), SpelledPitch.parse("F4")),
+            RhythmicValue.WHOLE, Velocity.MF);
+        List<Integer> violations = Instruments.FLUTE.outOfRangeNotes(List.of(goodChord, badChord));
         assertEquals(List.of(1), violations);
     }
 

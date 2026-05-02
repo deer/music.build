@@ -10,6 +10,7 @@ import build.base.marshalling.Unmarshal;
 import build.codemodel.foundation.descriptor.AbstractTraitable;
 import build.codemodel.foundation.descriptor.Trait;
 import build.music.core.Articulation;
+import build.music.core.Chord;
 import build.music.core.Note;
 import build.music.core.NoteEvent;
 import build.music.pitch.SpelledInterval;
@@ -119,9 +120,12 @@ public final class Instrument
      */
     public boolean canPlay(final List<NoteEvent> events) {
         return events.stream()
-            .filter(e -> e instanceof Note)
-            .map(e -> (Note) e)
-            .allMatch(n -> writtenRange().contains(n.pitch().spelled()));
+            .flatMap(e -> switch (e) {
+                case Note n -> Stream.of(n.pitch().spelled());
+                case Chord c -> c.pitches().stream().map(p -> p.spelled());
+                default -> Stream.empty();
+            })
+            .allMatch(p -> writtenRange().contains(p));
     }
 
     /**
@@ -129,11 +133,20 @@ public final class Instrument
      */
     public List<Integer> outOfRangeNotes(final List<NoteEvent> events) {
         final List<Integer> result = new ArrayList<>();
+        final PitchRange range = writtenRange();
         for (int i = 0; i < events.size(); i++) {
-            if (events.get(i) instanceof Note n) {
-                if (!writtenRange().contains(n.pitch().spelled())) {
-                    result.add(i);
+            switch (events.get(i)) {
+                case Note n -> {
+                    if (!range.contains(n.pitch().spelled())) {
+                        result.add(i);
+                    }
                 }
+                case Chord c -> {
+                    if (c.pitches().stream().anyMatch(p -> !range.contains(p.spelled()))) {
+                        result.add(i);
+                    }
+                }
+                default -> { }
             }
         }
         return List.copyOf(result);

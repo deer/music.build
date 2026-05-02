@@ -27,6 +27,7 @@ public final class LilyPondEngraver {
 
         runLilyPond(outputDir, baseName, lyFile, "--pdf");
 
+        Files.deleteIfExists(lyFile);
         return outputDir.resolve(baseName + ".pdf");
     }
 
@@ -45,6 +46,7 @@ public final class LilyPondEngraver {
 
         runLilyPond(outputDir, baseName, lyFile, "--png");
 
+        Files.deleteIfExists(lyFile);
         return outputDir.resolve(baseName + ".png");
     }
 

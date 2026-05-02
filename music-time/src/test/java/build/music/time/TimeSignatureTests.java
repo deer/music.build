@@ -35,6 +35,26 @@ class TimeSignatureTests {
     }
 
     @Test
+    void sixFour_isCompound() {
+        assertTrue(new TimeSignature(6, 4).isCompound());
+    }
+
+    @Test
+    void threeFour_isSimple() {
+        assertTrue(new TimeSignature(3, 4).isSimple());
+    }
+
+    @Test
+    void threeEight_isSimple() {
+        assertTrue(new TimeSignature(3, 8).isSimple());
+    }
+
+    @Test
+    void twelveSixteen_isCompound() {
+        assertTrue(new TimeSignature(12, 16).isCompound());
+    }
+
+    @Test
     void invalidBeatUnit_throws() {
         assertThrows(IllegalArgumentException.class, () -> new TimeSignature(4, 3));
     }
