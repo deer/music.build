@@ -157,6 +157,7 @@ C4/q~stac D4/q~stac r/e E4/e F4/q  # staccato melody
 - `voice.measure_count` — return the number of complete bars in a single voice
 - `voice.set_dynamics` — set volume for a voice: `ppp pp p mp mf f ff fff` (default: mf)
 - `voice.set_articulation` — set articulation for a voice: `staccato accent tenuto marcato legato`. Optional `from_bar` / `to_bar` to scope to a bar range (e.g. make only the final phrase tenuto).
+- `voice.add_expression_curve` — add a gradual CC 11 expression curve to a voice. Parameters: `voice`, `start_bar`, `end_bar`, `from_value` (0–127), `to_value` (0–127), `curve` (`linear` or `exponential`). Emits one CC 11 event per bar between `start_bar` and `end_bar`, interpolated from `from_value` to `to_value`. Use for crescendos, decrescendos, and phrase swells. Multiple curves on the same voice are additive. Example: `voice.add_expression_curve voice=melody start_bar=9 end_bar=16 from_value=30 to_value=110 curve=exponential`.
 - `voice.from_motif` — Advanced: create a voice from a saved motif, optionally transformed
 - `voice.delete` — remove a voice from the composition
 
@@ -259,8 +260,9 @@ C4/q~stac D4/q~stac r/e E4/e F4/q  # staccato melody
 3. drums.preset             — optional; quick drum pattern for N bars
 4. voice.create             — one call per voice, with full note sequence
    voice.append             — add more bars if needed
-   voice.set_dynamics       — set volume per voice (f for lead, mp for pads, etc.)
-   voice.set_articulation   — set articulation per voice (staccato for stabs, etc.)
+   voice.set_dynamics           — set volume per voice (f for lead, mp for pads, etc.)
+   voice.set_articulation       — set articulation per voice (staccato for stabs, etc.)
+   voice.add_expression_curve   — add a CC 11 crescendo/decrescendo curve (from_value→to_value over bar range)
 5. transform.transpose      — derive harmony voices (parallel thirds, octave doublings)
    voice.repeat             — extend loops to full length
    voice.concat             — join sections manually if not using form tools
@@ -446,4 +448,6 @@ For genre-specific scaffolding (Jazz, Bossa Nova, House, Reggae, Blues, Hip-Hop,
 - **MIDI metadata emitted automatically** — no extra steps needed: track names (voice names appear in DAW track headers), key signature (when `harmony.set_key` is set), and section markers (when `form.build` is used — DAW timeline shows "intro", "verse", "chorus" etc. at the correct bar positions).
 - **CC/PC events** are MIDI-only — they are silently skipped in LilyPond and MusicXML export. Don't rely on them for notation; use them purely for MIDI playback quality.
 - **Expression CC (11)** is the most impactful CC for realism on strings, brass, and winds. Place `cc:expr:N` events at phrase peaks and valleys rather than only at the start of a voice.
+- **`voice.add_expression_curve` is bar-absolute** — bar numbers are relative to the final assembled score, not the section. In a `form.build` workflow, add curves *after* `form.build` using the assembled bar positions (e.g., if section B starts at bar 9, set `start_bar=9`). Curves added before `form.build` keep their original bar numbers, which is correct for section A but wrong for a repeated section B.
+- **Staggered expression peaks across voices** — give each voice a different peak bar to create a rolling swell through the ensemble rather than a single unison climax. Example: flute peaks at bar 8 (`from_value=20 to_value=90 curve=exponential`), strings at bar 10, cello at bar 12. The `exponential` shape (quadratic ease-in: slow start, fast finish) suits crescendos; combine with a second curve going back down for a complete swell arc.
 - **CC events pass through all transforms unchanged** — transpose, augment, retrograde, invert all leave CC/PC events in place. This is correct behavior: a pan setting should survive a pitch transform.

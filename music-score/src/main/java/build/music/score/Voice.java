@@ -17,9 +17,11 @@ import build.music.core.ProgramChange;
 import build.music.core.Rest;
 import build.music.pitch.SpelledInterval;
 import build.music.pitch.typesystem.MusicCodeModel;
+import build.music.time.ExpressionCurve;
 import build.music.time.Fraction;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -82,6 +84,22 @@ public final class Voice
 
     public List<NoteEvent> events() {
         return getTrait(EventSequenceTrait.class).orElseThrow().events();
+    }
+
+    public List<ExpressionCurve> expressionCurves() {
+        return getTrait(ExpressionCurvesTrait.class)
+            .map(ExpressionCurvesTrait::curves)
+            .orElse(List.of());
+    }
+
+    public Voice withExpressionCurve(final ExpressionCurve curve) {
+        Objects.requireNonNull(curve, "curve must not be null");
+        final Voice v = Voice.of(name(), events());
+        final List<ExpressionCurve> existing = expressionCurves();
+        final List<ExpressionCurve> updated = new ArrayList<>(existing);
+        updated.add(curve);
+        v.addTrait(ExpressionCurvesTrait.of(updated));
+        return v;
     }
 
     // ── derived ───────────────────────────────────────────────────────────────

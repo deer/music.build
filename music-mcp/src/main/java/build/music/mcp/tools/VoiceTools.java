@@ -8,6 +8,7 @@ import build.music.mcp.ToolResult;
 import build.music.pitch.SpelledInterval;
 import build.music.pitch.SpelledPitch;
 import build.music.score.Voice;
+import build.music.time.ExpressionCurve;
 import build.music.time.Fraction;
 import build.music.transform.Augment;
 import build.music.transform.Invert;
@@ -210,6 +211,28 @@ public final class VoiceTools {
                 "Unknown transform '" + transform +
                     "'. Valid transforms: transpose, invert, retrograde, augment.");
         };
+    }
+
+    /**
+     * Tool: voice.add_expression_curve — add a CC 11 expression curve to a voice.
+     */
+    public static ToolResult addExpressionCurve(final CompositionContext ctx,
+                                                final String voice,
+                                                final int startBar,
+                                                final int endBar,
+                                                final int fromValue,
+                                                final int toValue,
+                                                final String curve) {
+        try {
+            final ExpressionCurve ec = new ExpressionCurve(startBar, endBar, fromValue, toValue, curve);
+            ctx.addExpressionCurve(voice, ec);
+            return ToolResult.success(
+                "Added " + curve + " expression curve to '" + voice +
+                    "': bars " + startBar + "–" + endBar +
+                    ", CC 11 " + fromValue + " → " + toValue + ".");
+        } catch (final IllegalArgumentException e) {
+            return ToolResult.error(e.getMessage());
+        }
     }
 
     private static String requireArg(final Map<String, String> args,

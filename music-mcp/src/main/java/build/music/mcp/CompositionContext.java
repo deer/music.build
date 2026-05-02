@@ -13,6 +13,7 @@ import build.music.score.Part;
 import build.music.score.Score;
 import build.music.score.StructuredVoice;
 import build.music.score.Voice;
+import build.music.time.ExpressionCurve;
 import build.music.time.Fraction;
 import build.music.time.Tempo;
 import build.music.time.TempoChange;
@@ -50,6 +51,7 @@ public final class CompositionContext {
     }
 
     private final Map<String, List<NoteEvent>> voices = new LinkedHashMap<>();
+    private final Map<String, List<ExpressionCurve>> voiceExpressionCurves = new LinkedHashMap<>();
     private final Map<String, List<NoteEvent>> motifs = new LinkedHashMap<>();
     private final Map<String, PartAssignment> partAssignments = new LinkedHashMap<>();
     private final Map<String, PartAssignment> instrumentDefaults = new LinkedHashMap<>();
@@ -127,9 +129,15 @@ public final class CompositionContext {
         return Collections.unmodifiableSet(voices.keySet());
     }
 
+    public void addExpressionCurve(final String voiceName, final ExpressionCurve curve) {
+        requireVoice(voiceName);
+        voiceExpressionCurves.computeIfAbsent(voiceName, k -> new ArrayList<>()).add(curve);
+    }
+
     public void deleteVoice(final String name) {
         requireVoice(name);
         voices.remove(name);
+        voiceExpressionCurves.remove(name);
         partAssignments.remove(name);
         voiceDynamics.remove(name);
         voiceArticulations.remove(name);
@@ -255,7 +263,11 @@ public final class CompositionContext {
         for (final Map.Entry<String, List<NoteEvent>> entry : voices.entrySet()) {
             final String name = entry.getKey();
             final List<NoteEvent> events = applyVoiceDefaults(name, entry.getValue());
-            final Voice voice = Voice.of(name, events);
+            Voice voice = Voice.of(name, events);
+            final List<ExpressionCurve> curves = voiceExpressionCurves.getOrDefault(name, List.of());
+            for (final ExpressionCurve curve : curves) {
+                voice = voice.withExpressionCurve(curve);
+            }
 
             final PartAssignment assignment = partAssignments.get(name);
             final Part part;
@@ -529,6 +541,10 @@ public final class CompositionContext {
 
         for (final Part part : score.scoreParts()) {
             voices.put(part.name(), new ArrayList<>(part.voice().events()));
+            final List<ExpressionCurve> curves = part.voice().expressionCurves();
+            if (!curves.isEmpty()) {
+                voiceExpressionCurves.put(part.name(), new ArrayList<>(curves));
+            }
             final PartAssignment assignment = new PartAssignment(part.midiChannel(), part.midiProgram(), "");
             partAssignments.put(part.name(), assignment);
             instrumentDefaults.put(part.name(), assignment);
@@ -548,6 +564,7 @@ public final class CompositionContext {
 
     public void clear() {
         voices.clear();
+        voiceExpressionCurves.clear();
         motifs.clear();
         partAssignments.clear();
         instrumentDefaults.clear();
