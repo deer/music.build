@@ -1,5 +1,8 @@
 package build.music.server;
 
+import build.base.json.JsonBoolean;
+import build.base.json.JsonNumber;
+import build.base.json.JsonObject;
 import build.base.network.option.Port;
 import build.music.mcp.CompositionContext;
 import build.music.mcp.ExportOptions;
@@ -11,8 +14,6 @@ import build.serve.foundation.routing.RouterBuilder;
 import build.serve.health.HealthHandler;
 import build.serve.htmx.HtmxMiddleware;
 import build.serve.mcp.McpServer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Runnable MCP server that exposes music.build composition tools.
@@ -21,7 +22,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public final class MusicMcpServer extends ServerApplication.Implementation {
 
     private final CompositionContext context = new CompositionContext();
-    private final ObjectMapper mapper = new ObjectMapper();
 
     public static void main(final String[] args) {
         final String portEnv = System.getenv("PORT");
@@ -50,14 +50,14 @@ public final class MusicMcpServer extends ServerApplication.Implementation {
 
         mcp.toolCallEvents().subscribe(event -> {
             try {
-                final ObjectNode line = mapper.createObjectNode();
-                line.put("ts", event.timestamp().toString());
-                line.put("tool", event.toolName());
-                line.set("args", event.arguments());
-                line.put("durationMs", event.durationMs());
-                line.put("ok", event.error().isEmpty());
-                event.error().ifPresent(err -> line.put("error", err.getMessage()));
-                context.addSessionLogLine(mapper.writeValueAsString(line));
+                final var lineBuilder = JsonObject.builder()
+                    .put("ts", event.timestamp().toString())
+                    .put("tool", event.toolName())
+                    .put("args", event.arguments())
+                    .put("durationMs", JsonNumber.of(event.durationMs()))
+                    .put("ok", JsonBoolean.of(event.error().isEmpty()));
+                event.error().ifPresent(err -> lineBuilder.put("error", err.getMessage()));
+                context.addSessionLogLine(lineBuilder.build().toJsonString());
             } catch (final Exception e) {
                 log.log(System.Logger.Level.WARNING, "Session log serialization failed: {0}", e.getMessage());
             }
