@@ -34,6 +34,8 @@ import static java.util.stream.Collectors.toUnmodifiableMap;
 public final class Section
     extends AbstractTraitable {
 
+    private Map<String, Voice> voicesCache;
+
     private Section(final MusicCodeModel codeModel) {
         super(codeModel);
     }
@@ -104,8 +106,11 @@ public final class Section
     }
 
     public Map<String, Voice> voices() {
-        return traits(SectionVoicePair.class)
-            .collect(toUnmodifiableMap(SectionVoicePair::name, SectionVoicePair::voice));
+        if (voicesCache == null) {
+            voicesCache = traits(SectionVoicePair.class)
+                .collect(toUnmodifiableMap(SectionVoicePair::name, SectionVoicePair::voice));
+        }
+        return voicesCache;
     }
 
     public int measures() {

@@ -82,7 +82,10 @@ public final class Key
      * The scale for this key.
      */
     public Scale scale() {
-        final ScaleType type = minor() ? ScaleType.NATURAL_MINOR : ScaleType.MAJOR;
+        return Scale.of(tonic(), accidental(), minor() ? ScaleType.NATURAL_MINOR : ScaleType.MAJOR);
+    }
+
+    public Scale scale(final ScaleType type) {
         return Scale.of(tonic(), accidental(), type);
     }
 
@@ -111,7 +114,7 @@ public final class Key
      */
     public Key dominant() {
         final SpelledPitch fifth = scale().degree(5, 4);
-        return Key.major(fifth.name(), fifth.accidental());
+        return Key.of(fifth.name(), fifth.accidental(), minor());
     }
 
     /**
@@ -119,7 +122,7 @@ public final class Key
      */
     public Key subdominant() {
         final SpelledPitch fourth = scale().degree(4, 4);
-        return Key.major(fourth.name(), fourth.accidental());
+        return Key.of(fourth.name(), fourth.accidental(), minor());
     }
 
     /**

@@ -101,6 +101,11 @@ public final class Instruments {
         range("G3", "E7"), range("G3", "A6"),
         40, stringArticulations(), false, null);
 
+    public static final Instrument VIOLIN_II = Instrument.of(
+        "Violin II", STRING,
+        range("G3", "E7"), range("G3", "A6"),
+        40, stringArticulations(), false, null);
+
     public static final Instrument VIOLA = Instrument.of(
         "Viola", STRING,
         range("C3", "E6"), range("C3", "D6"),
@@ -159,10 +164,10 @@ public final class Instruments {
             .findFirst();
     }
 
-    public static Optional<Instrument> byMidiProgram(final int program) {
+    public static List<Instrument> byMidiProgram(final int program) {
         return ALL.stream()
             .filter(i -> i.midiProgram() == program)
-            .findFirst();
+            .toList();
     }
 
     public static List<Instrument> byFamily(final InstrumentFamily family) {

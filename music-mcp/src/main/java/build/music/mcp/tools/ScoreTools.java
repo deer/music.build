@@ -166,7 +166,9 @@ public final class ScoreTools {
         try {
             final String resolvedCurve = (curve == null || curve.isBlank()) ? "linear" : curve.toLowerCase();
             ctx.addTempoChange(startBar, endBar, toBpm, resolvedCurve);
-            final String direction = toBpm < ctx.getTempo().bpm() ? "ritardando" : "accelerando";
+            final var changes = ctx.getTempoChanges();
+            final int fromBpm = changes.get(changes.size() - 1).fromBpm();
+            final String direction = toBpm < fromBpm ? "ritardando" : "accelerando";
             return ToolResult.success(
                 "Added " + direction + ": bars " + startBar + "–" + endBar +
                     " → " + toBpm + " BPM (" + resolvedCurve + " curve). " +
