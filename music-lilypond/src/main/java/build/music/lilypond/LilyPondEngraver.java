@@ -12,6 +12,9 @@ public final class LilyPondEngraver {
     private LilyPondEngraver() {
     }
 
+    private static volatile String cachedExecutable;
+    private static volatile boolean executableSearched = false;
+
     /**
      * Write LilyPond source to a .ly file and invoke lilypond to produce a PDF.
      *
@@ -62,6 +65,9 @@ public final class LilyPondEngraver {
      * then common absolute locations as a fallback.
      */
     private static String findExecutable() {
+        if (executableSearched) {
+            return cachedExecutable;
+        }
         for (final String candidate : new String[]{"lilypond", "/usr/bin/lilypond", "/usr/local/bin/lilypond"}) {
             try {
                 final Process proc = new ProcessBuilder(candidate, "--version")
@@ -69,12 +75,15 @@ public final class LilyPondEngraver {
                     .start();
                 proc.getInputStream().transferTo(java.io.OutputStream.nullOutputStream());
                 if (proc.waitFor() == 0) {
+                    cachedExecutable = candidate;
+                    executableSearched = true;
                     return candidate;
                 }
             } catch (final IOException | InterruptedException ignored) {
                 // try next candidate
             }
         }
+        executableSearched = true;
         return null;
     }
 

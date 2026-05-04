@@ -31,7 +31,6 @@ Always use `./mvnw` (never bare `mvn`).
 - `CompositionContext` is one instance per server process (no multi-user support)
 - `form.build` (MCP tool) replaces voices in-place by name — originals are lost
 - `Score` depends on `music-harmony.Key` — these modules cannot be separated
-- `Chord` events pass through pitch transforms (invert/transpose) unchanged
 - `music-score/Voice` and `music-score/Score` are the central exchange types between all output modules
 
 For detailed architecture, module guide, gotchas, and navigation guide, see [docs/CODEBASE_MAP.md](docs/CODEBASE_MAP.md).

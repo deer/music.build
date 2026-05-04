@@ -72,7 +72,7 @@ public final class Ensemble
     // ── catalog constants ─────────────────────────────────────────────────────
 
     public static final Ensemble STRING_QUARTET = Ensemble.of("String Quartet",
-        List.of(Instruments.VIOLIN, Instruments.VIOLIN, Instruments.VIOLA, Instruments.CELLO));
+        List.of(Instruments.VIOLIN, Instruments.VIOLIN_II, Instruments.VIOLA, Instruments.CELLO));
 
     public static final Ensemble WOODWIND_QUINTET = Ensemble.of("Woodwind Quintet",
         List.of(Instruments.FLUTE, Instruments.OBOE, Instruments.CLARINET,

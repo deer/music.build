@@ -146,7 +146,8 @@ public final class Instrument
                         result.add(i);
                     }
                 }
-                default -> { }
+                default -> {
+                }
             }
         }
         return List.copyOf(result);

@@ -7,7 +7,9 @@ import build.music.pitch.IntervalQuality;
 import build.music.pitch.IntervalSize;
 import build.music.pitch.SpelledInterval;
 
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 @Singular
 public enum ChordQuality implements Trait {
@@ -16,7 +18,14 @@ public enum ChordQuality implements Trait {
     HALF_DIMINISHED_7, DIMINISHED_7, MINOR_MAJOR_7, AUGMENTED_MAJOR_7,
     SUSPENDED_2, SUSPENDED_4;
 
+    private static final Map<ChordQuality, List<SpelledInterval>> INTERVAL_CACHE =
+        new EnumMap<>(ChordQuality.class);
+
     public List<SpelledInterval> intervals() {
+        return INTERVAL_CACHE.computeIfAbsent(this, ChordQuality::computeIntervals);
+    }
+
+    private List<SpelledInterval> computeIntervals() {
         return switch (this) {
             case MAJOR -> List.of(P(1), M(3), P(5));
             case MINOR -> List.of(P(1), m(3), P(5));
