@@ -458,7 +458,7 @@ public final class MusicMcpTools {
             "Set the musical key for the composition. " +
                 "Format: 'Tonic Mode' — e.g. 'C major', 'A minor', 'F# minor', 'Bb major'. " +
                 "The key is used for harmonization, diatonic transposition, and chord progressions.",
-            McpTools.schema( Map.of("key", "Key description, e.g. 'C major', 'G major', 'D minor'"),
+            McpTools.schema(Map.of("key", "Key description, e.g. 'C major', 'G major', 'D minor'"),
                 List.of("key")),
             (ctx, args) -> HarmonyTools.setKey(ctx, str(args, "key")));
     }
@@ -603,7 +603,7 @@ public final class MusicMcpTools {
             McpTools.schema(
                 Map.of(
                     "voice", "Name of the voice to set dynamics for",
-                    "dynamics", "Dynamic level: ppp, pp, p, mp, mf, f, ff, fff"
+                    "dynamics", "Dynamics level: ppp, pp, p, mp, mf, f, ff, fff"
                 ),
                 List.of("voice", "dynamics")),
             (ctx, args) -> VoiceTools.setDynamics(ctx, str(args, "voice"), str(args, "dynamics"))
@@ -723,8 +723,8 @@ public final class MusicMcpTools {
     private static McpTool voiceTrimTool(final CompositionContextProvider provider) {
         return tool(provider, "voice.trim",
             "Truncate a voice to N bars, discarding everything after. Writes back in place.",
-            McpTools.schema(
-                Map.of("voice", "Name of the voice to trim", "bars", "Number of bars to keep"),
+            buildObjectSchema(
+                Map.of("voice", strProp("Name of the voice to trim"), "bars", intProp("Number of bars to keep")),
                 List.of("voice", "bars")),
             (ctx, args) -> VoiceOpTools.trimVoice(ctx, str(args, "voice"), args.get("bars").asNumber().toNumber().intValue()));
     }
@@ -894,10 +894,10 @@ public final class MusicMcpTools {
                 "waltz_jazz (3/4 kick+hihat on 1, brushed snare on 2&3), " +
                 "swing (ride swing eighths, half-note kick, foot hi-hat on 2&4), " +
                 "afrohouse (syncopated kick on 1/and-of-2/3, open hi-hat accents, conga layer, maracas eighths).",
-            McpTools.schema(
+            buildObjectSchema(
                 Map.of(
-                    "preset", "Preset name: house_4on4, rock_8th, rock_basic, bossa_nova, waltz, waltz_jazz, swing, afrohouse",
-                    "bars", "Number of bars to generate (1-64)"
+                    "preset", strProp("Preset name: house_4on4, rock_8th, rock_basic, bossa_nova, waltz, waltz_jazz, swing, afrohouse"),
+                    "bars", intProp("Number of bars to generate (1-64)")
                 ),
                 List.of("preset", "bars")),
             (ctx, args) -> DrumPresets.loadPreset(ctx, str(args, "preset"), args.get("bars").asNumber().toNumber().intValue()));
@@ -1149,20 +1149,21 @@ public final class MusicMcpTools {
     }
 
     private static String optStr(final JsonValue args, final String key) {
-        final JsonValue node = args.get(key);
-        if (node instanceof JsonNull) {
+        if (!args.asObject().has(key)) {
             return null;
         }
-        final String v = node.asString().value();
+        final String v = args.get(key).asString().value();
         return v.isBlank() ? null : v;
     }
 
     private static Integer optInt(final JsonValue args, final String key) {
-        final JsonValue node = args.get(key);
-        return node instanceof JsonNull ? null : node.asNumber().toNumber().intValue();
+        if (!args.asObject().has(key)) {
+            return null;
+        }
+        return args.get(key).asNumber().toNumber().intValue();
     }
 
     private static boolean has(final JsonValue args, final String key) {
-        return !(args.get(key) instanceof JsonNull);
+        return args.asObject().has(key);
     }
 }
