@@ -1,5 +1,9 @@
 package build.music.mcp;
 
+import build.base.json.JsonArray;
+import build.base.json.JsonNull;
+import build.base.json.JsonObject;
+import build.base.json.JsonValue;
 import build.music.mcp.tools.DrumPresets;
 import build.music.mcp.tools.ExportTools;
 import build.music.mcp.tools.FormTools;
@@ -18,9 +22,6 @@ import build.serve.mcp.McpServer;
 import build.serve.mcp.McpTool;
 import build.serve.mcp.McpToolResult;
 import build.serve.mcp.McpTools;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.Base64;
 import java.util.HashMap;
@@ -35,8 +36,6 @@ import java.util.Map;
  * {@link ExportOptions#bytesOnly()} for hosted deployments (no disk accumulation).
  */
 public final class MusicMcpTools {
-
-    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private MusicMcpTools() {
     }
@@ -130,7 +129,7 @@ public final class MusicMcpTools {
                 "Chords: '<C4 E4 G4>/q' = C major triad as quarter chord. " +
                 "Articulations: append ~stac (staccato), ~acc (accent), ~ten (tenuto), ~marc (marcato), ~leg (legato). " +
                 "Example: 'C4/q~stac D4/e E4/e <F4 A4 C5>/h r/q'",
-            McpTools.schema(MAPPER,
+            McpTools.schema(
                 Map.of(
                     "name", "Voice name (e.g. 'melody', 'bass', 'counterpoint')",
                     "notes", "Note sequence, e.g. 'E4/q E4/q F4/q G4/q G4/q F4/q E4/q D4/q'"
@@ -146,7 +145,7 @@ public final class MusicMcpTools {
             "Append additional notes to an existing voice. " +
                 "Uses the same note format as voice.create: 'pitch/duration' tokens, chords '<C4 E4 G4>/q', and rests 'r/q'. " +
                 "Example: build a melody bar-by-bar — create with voice.create, then voice.append each new bar.",
-            McpTools.schema(MAPPER,
+            McpTools.schema(
                 Map.of(
                     "name", "Name of the existing voice to append to",
                     "notes", "Note sequence to append"
@@ -181,16 +180,16 @@ public final class MusicMcpTools {
                 Map<String, String> transformArgs = null;
                 if (transform != null) {
                     transformArgs = new HashMap<>();
-                    if (args.has("interval")) {
+                    if (has(args, "interval")) {
                         transformArgs.put("interval", str(args, "interval"));
                     }
-                    if (args.has("direction")) {
+                    if (has(args, "direction")) {
                         transformArgs.put("direction", str(args, "direction"));
                     }
-                    if (args.has("axis")) {
+                    if (has(args, "axis")) {
                         transformArgs.put("axis", str(args, "axis"));
                     }
-                    if (args.has("factor")) {
+                    if (has(args, "factor")) {
                         transformArgs.put("factor", str(args, "factor"));
                     }
                 }
@@ -214,7 +213,7 @@ public final class MusicMcpTools {
             "voice.delete",
             "Remove a voice from the composition. Use this to clean up scratch or scaffolding voices " +
                 "that should not appear in the final score or form sections.",
-            McpTools.schema(MAPPER,
+            McpTools.schema(
                 Map.of("name", "Name of the voice to delete"),
                 List.of("name")),
             (ctx, args) -> VoiceOpTools.deleteVoice(ctx, str(args, "name"))
@@ -251,7 +250,7 @@ public final class MusicMcpTools {
                 "Synth: synth_lead (sawtooth), synth_pad (warm pad). " +
                 "Percussion: drums (forces channel 9, GM drum map). " +
                 "Example: assign 'melody' to 'synth_lead', 'chords' to 'electric_piano', 'kick' to 'drums'.",
-            McpTools.schema(MAPPER,
+            McpTools.schema(
                 Map.of(
                     "voice", "Name of the voice to assign",
                     "instrument", "Instrument name (e.g. 'piano', 'strings', 'flute')"
@@ -378,7 +377,7 @@ public final class MusicMcpTools {
             "query.voice",
             "Display the notes of a specific voice in a human-readable format with bar lines. " +
                 "Use this to inspect a voice before transforming or exporting.",
-            McpTools.schema(MAPPER,
+            McpTools.schema(
                 Map.of("voice", "Name of the voice to display"),
                 List.of("voice")),
             (ctx, args) -> QueryTools.queryVoice(ctx, str(args, "voice"))
@@ -389,7 +388,7 @@ public final class MusicMcpTools {
         return tool(provider,
             "query.motif",
             "Display the notes of a saved motif.",
-            McpTools.schema(MAPPER,
+            McpTools.schema(
                 Map.of("motif", "Name of the motif to display"),
                 List.of("motif")),
             (ctx, args) -> QueryTools.queryMotif(ctx, str(args, "motif"))
@@ -459,7 +458,7 @@ public final class MusicMcpTools {
             "Set the musical key for the composition. " +
                 "Format: 'Tonic Mode' — e.g. 'C major', 'A minor', 'F# minor', 'Bb major'. " +
                 "The key is used for harmonization, diatonic transposition, and chord progressions.",
-            McpTools.schema(MAPPER, Map.of("key", "Key description, e.g. 'C major', 'G major', 'D minor'"),
+            McpTools.schema( Map.of("key", "Key description, e.g. 'C major', 'G major', 'D minor'"),
                 List.of("key")),
             (ctx, args) -> HarmonyTools.setKey(ctx, str(args, "key")));
     }
@@ -470,7 +469,7 @@ public final class MusicMcpTools {
                 "Format: space or dash-separated Roman numerals, e.g. 'I IV V I', 'ii V I', 'I V vi IV'. " +
                 "Upper case = major chord, lower case = minor, 'o' suffix = diminished, '7' = seventh. " +
                 "Requires harmony.set_key to be called first for full resolution.",
-            McpTools.schema(MAPPER,
+            McpTools.schema(
                 Map.of("progression", "Roman numeral progression, e.g. 'I IV V I', 'ii V I'"),
                 List.of("progression")),
             (ctx, args) -> HarmonyTools.setChordProgression(ctx, str(args, "progression")));
@@ -485,7 +484,7 @@ public final class MusicMcpTools {
                 "Use for jazz chord sheets, ii-V-I sequences, blues changes. " +
                 "These chords are used by harmony.walking_bass and override harmony.chord_progression for those tools. " +
                 "Example: harmony.set_bars '1:Gm7 2:C7 3:Fm7 4:Bb7 5:Ebmaj7 6:Ebmaj7 7:Cm7 8:D7'",
-            McpTools.schema(MAPPER,
+            McpTools.schema(
                 Map.of("bars", "Bar chord string, e.g. '1:Cm7 2:F7 3:Bb7 4:Eb'"),
                 List.of("bars")),
             (ctx, args) -> HarmonyTools.setBarChords(ctx, str(args, "bars")));
@@ -503,7 +502,7 @@ public final class MusicMcpTools {
                     "octave", intProp("Octave for chord roots, e.g. 3 for bass")),
                 List.of("voice")),
             (ctx, args) -> HarmonyTools.harmonize(ctx, str(args, "voice"), optStr(args, "target_voice"),
-                args.has("octave") ? args.get("octave").asInt() : 3));
+                has(args, "octave") ? args.get("octave").asNumber().toNumber().intValue() : 3));
     }
 
     private static McpTool harmonySuggestHarmonyTool(final CompositionContextProvider provider) {
@@ -512,7 +511,7 @@ public final class MusicMcpTools {
                 "Finds the best-fitting diatonic chord for each measure, saves as current progression. " +
                 "Example result: 'I IV I V' for a simple melody in C major. " +
                 "Requires harmony.set_key to be called first.",
-            McpTools.schema(MAPPER,
+            McpTools.schema(
                 Map.of("voice", "Melody voice to analyze"),
                 List.of("voice")),
             (ctx, args) -> HarmonyTools.suggestHarmony(ctx, str(args, "voice")));
@@ -522,7 +521,7 @@ public final class MusicMcpTools {
         return tool(provider, "harmony.detect_key",
             "Advanced: Detect the likely key of a voice using pitch class distribution analysis. " +
                 "Sets the detected key as the current key. Use harmony.set_key when you know the key.",
-            McpTools.schema(MAPPER,
+            McpTools.schema(
                 Map.of("voice", "Voice to analyze for key detection"),
                 List.of("voice")),
             (ctx, args) -> HarmonyTools.detectKey(ctx, str(args, "voice")));
@@ -540,7 +539,7 @@ public final class MusicMcpTools {
                     "target_voice", strProp("Name for result voice (optional)")),
                 List.of("voice", "steps")),
             (ctx, args) -> HarmonyTools.diatonicTranspose(ctx, str(args, "voice"),
-                args.get("steps").asInt(), optStr(args, "target_voice")));
+                args.get("steps").asNumber().toNumber().intValue(), optStr(args, "target_voice")));
     }
 
     private static McpTool harmonyWalkingBassTool(final CompositionContextProvider provider) {
@@ -561,8 +560,8 @@ public final class MusicMcpTools {
                 ),
                 List.of()),
             (ctx, args) -> HarmonyTools.walkingBass(ctx, optStr(args, "target_voice"),
-                args.has("octave") ? args.get("octave").asInt() : 2,
-                args.has("bars") ? args.get("bars").asInt() : null,
+                has(args, "octave") ? args.get("octave").asNumber().toNumber().intValue() : 2,
+                has(args, "bars") ? args.get("bars").asNumber().toNumber().intValue() : null,
                 optStr(args, "velocity"),
                 optStr(args, "approach")));
     }
@@ -588,9 +587,9 @@ public final class MusicMcpTools {
                 ),
                 List.of()),
             (ctx, args) -> HarmonyTools.comp(ctx, optStr(args, "target_voice"),
-                args.has("octave") ? args.get("octave").asInt() : 3,
+                has(args, "octave") ? args.get("octave").asNumber().toNumber().intValue() : 3,
                 optStr(args, "style"),
-                args.has("bars") ? args.get("bars").asInt() : null,
+                has(args, "bars") ? args.get("bars").asNumber().toNumber().intValue() : null,
                 optStr(args, "velocity")));
     }
 
@@ -601,7 +600,7 @@ public final class MusicMcpTools {
                 "Applies to all notes in the voice when rendering to MIDI. " +
                 "Example: set 'bass' to forte for a driving bass line, 'pad' to piano for background chords. " +
                 "Dynamics values: ppp, pp, p, mp, mf (default), f, ff, fff.",
-            McpTools.schema(MAPPER,
+            McpTools.schema(
                 Map.of(
                     "voice", "Name of the voice to set dynamics for",
                     "dynamics", "Dynamic level: ppp, pp, p, mp, mf, f, ff, fff"
@@ -628,8 +627,8 @@ public final class MusicMcpTools {
                 ),
                 List.of("voice", "articulation")),
             (ctx, args) -> VoiceTools.setArticulation(ctx, str(args, "voice"), str(args, "articulation"),
-                args.has("from_bar") ? args.get("from_bar").asInt() : null,
-                args.has("to_bar") ? args.get("to_bar").asInt() : null)
+                has(args, "from_bar") ? args.get("from_bar").asNumber().toNumber().intValue() : null,
+                has(args, "to_bar") ? args.get("to_bar").asNumber().toNumber().intValue() : null)
         );
     }
 
@@ -654,10 +653,10 @@ public final class MusicMcpTools {
             (ctx, args) -> VoiceTools.addExpressionCurve(
                 ctx,
                 str(args, "voice"),
-                args.get("start_bar").asInt(),
-                args.get("end_bar").asInt(),
-                args.get("from_value").asInt(),
-                args.get("to_value").asInt(),
+                args.get("start_bar").asNumber().toNumber().intValue(),
+                args.get("end_bar").asNumber().toNumber().intValue(),
+                args.get("from_value").asNumber().toNumber().intValue(),
+                args.get("to_value").asNumber().toNumber().intValue(),
                 str(args, "curve"))
         );
     }
@@ -686,7 +685,7 @@ public final class MusicMcpTools {
                     "target_voice", strProp("Name for the repeated voice (optional)")),
                 List.of("voice", "times")),
             (ctx, args) -> VoiceOpTools.repeat(ctx, str(args, "voice"),
-                args.get("times").asInt(), optStr(args, "target_voice")));
+                args.get("times").asNumber().toNumber().intValue(), optStr(args, "target_voice")));
     }
 
     private static McpTool voiceSliceTool(final CompositionContextProvider provider) {
@@ -702,7 +701,7 @@ public final class MusicMcpTools {
                     "target_voice", strProp("Name for the sliced voice (optional)")),
                 List.of("voice", "start_measure", "end_measure")),
             (ctx, args) -> VoiceOpTools.sliceMeasures(ctx, str(args, "voice"),
-                args.get("start_measure").asInt(), args.get("end_measure").asInt(),
+                args.get("start_measure").asNumber().toNumber().intValue(), args.get("end_measure").asNumber().toNumber().intValue(),
                 optStr(args, "target_voice")));
     }
 
@@ -718,16 +717,16 @@ public final class MusicMcpTools {
                     "target_voice", strProp("Name for the padded voice (optional, replaces original if omitted)")),
                 List.of("voice", "start_measure")),
             (ctx, args) -> VoiceOpTools.padToMeasure(ctx, str(args, "voice"),
-                args.get("start_measure").asInt(), optStr(args, "target_voice")));
+                args.get("start_measure").asNumber().toNumber().intValue(), optStr(args, "target_voice")));
     }
 
     private static McpTool voiceTrimTool(final CompositionContextProvider provider) {
         return tool(provider, "voice.trim",
             "Truncate a voice to N bars, discarding everything after. Writes back in place.",
-            McpTools.schema(MAPPER,
+            McpTools.schema(
                 Map.of("voice", "Name of the voice to trim", "bars", "Number of bars to keep"),
                 List.of("voice", "bars")),
-            (ctx, args) -> VoiceOpTools.trimVoice(ctx, str(args, "voice"), args.get("bars").asInt()));
+            (ctx, args) -> VoiceOpTools.trimVoice(ctx, str(args, "voice"), args.get("bars").asNumber().toNumber().intValue()));
     }
 
     private static McpTool voiceSetBarTool(final CompositionContextProvider provider) {
@@ -740,7 +739,7 @@ public final class MusicMcpTools {
                     "bar", intProp("Bar number to replace (1-based)"),
                     "notes", strProp("New note sequence for the bar, e.g. 'C4/q D4/q E4/q F4/q'")),
                 List.of("voice", "bar", "notes")),
-            (ctx, args) -> VoiceOpTools.setBar(ctx, str(args, "voice"), args.get("bar").asInt(), str(args, "notes")));
+            (ctx, args) -> VoiceOpTools.setBar(ctx, str(args, "voice"), args.get("bar").asNumber().toNumber().intValue(), str(args, "notes")));
     }
 
     private static McpTool voiceReplaceRangeTool(final CompositionContextProvider provider) {
@@ -755,7 +754,7 @@ public final class MusicMcpTools {
                     "notes", strProp("Replacement note sequence")),
                 List.of("voice", "from_bar", "to_bar", "notes")),
             (ctx, args) -> VoiceOpTools.replaceRange(ctx, str(args, "voice"),
-                args.get("from_bar").asInt(), args.get("to_bar").asInt(), str(args, "notes")));
+                args.get("from_bar").asNumber().toNumber().intValue(), args.get("to_bar").asNumber().toNumber().intValue(), str(args, "notes")));
     }
 
     private static McpTool voiceReplaceNoteTool(final CompositionContextProvider provider) {
@@ -771,14 +770,14 @@ public final class MusicMcpTools {
                     "new", strProp("Replacement note(s), e.g. 'D4/q'")),
                 List.of("voice", "bar", "old", "new")),
             (ctx, args) -> VoiceOpTools.replaceNote(ctx, str(args, "voice"),
-                args.get("bar").asInt(), str(args, "old"), str(args, "new")));
+                args.get("bar").asNumber().toNumber().intValue(), str(args, "old"), str(args, "new")));
     }
 
     private static McpTool voiceMeasureCountTool(final CompositionContextProvider provider) {
         return tool(provider, "voice.measure_count",
             "Return the number of complete bars in a voice. " +
                 "Also shown in voice.list — use this when you only need the count for one voice.",
-            McpTools.schema(MAPPER,
+            McpTools.schema(
                 Map.of("voice", "Voice name"),
                 List.of("voice")),
             (ctx, args) -> VoiceOpTools.measureCount(ctx, str(args, "voice")));
@@ -828,7 +827,7 @@ public final class MusicMcpTools {
                 ),
                 List.of("section", "pass", "ending_section")),
             (ctx, args) -> FormTools.setEnding(ctx, str(args, "section"),
-                args.get("pass").asInt(), str(args, "ending_section")));
+                args.get("pass").asNumber().toNumber().intValue(), str(args, "ending_section")));
     }
 
     private static McpTool formBuildTool(final CompositionContextProvider provider) {
@@ -874,7 +873,7 @@ public final class MusicMcpTools {
             "Get information about an instrument: range, family, MIDI program, clef. " +
                 "Instrument names: Piano, Flute, Oboe, Clarinet, Bassoon, Trumpet, French Horn, " +
                 "Trombone, Tuba, Violin, Viola, Cello, Double Bass, Harp, Organ, etc.",
-            McpTools.schema(MAPPER,
+            McpTools.schema(
                 Map.of("instrument", "Instrument name, e.g. 'Flute', 'Violin', 'Piano'"),
                 List.of("instrument")),
             args -> InstrumentTools.info(str(args, "instrument"))
@@ -895,13 +894,13 @@ public final class MusicMcpTools {
                 "waltz_jazz (3/4 kick+hihat on 1, brushed snare on 2&3), " +
                 "swing (ride swing eighths, half-note kick, foot hi-hat on 2&4), " +
                 "afrohouse (syncopated kick on 1/and-of-2/3, open hi-hat accents, conga layer, maracas eighths).",
-            McpTools.schema(MAPPER,
+            McpTools.schema(
                 Map.of(
                     "preset", "Preset name: house_4on4, rock_8th, rock_basic, bossa_nova, waltz, waltz_jazz, swing, afrohouse",
                     "bars", "Number of bars to generate (1-64)"
                 ),
                 List.of("preset", "bars")),
-            (ctx, args) -> DrumPresets.loadPreset(ctx, str(args, "preset"), args.get("bars").asInt()));
+            (ctx, args) -> DrumPresets.loadPreset(ctx, str(args, "preset"), args.get("bars").asNumber().toNumber().intValue()));
     }
 
     private static McpTool scoreSetSwingTool(final CompositionContextProvider provider) {
@@ -912,7 +911,7 @@ public final class MusicMcpTools {
                 "Only affects eighth notes; quarter notes, dotted values, and triplets are unchanged. " +
                 "Set ratio to '0' to disable swing and return to straight timing. " +
                 "Example: score.set_swing 2/3 → jazz standard swing feel.",
-            McpTools.schema(MAPPER,
+            McpTools.schema(
                 Map.of("ratio", "Swing ratio between 0.5 and 1.0 — e.g. '2/3' (standard), '3/5' (light), '0' to disable"),
                 List.of("ratio")),
             (ctx, args) -> ScoreTools.setSwing(ctx, str(args, "ratio")));
@@ -934,8 +933,8 @@ public final class MusicMcpTools {
                 ),
                 List.of("start_bar", "end_bar", "to_bpm")),
             (ctx, args) -> ScoreTools.setTempoChange(ctx,
-                args.get("start_bar").asInt(), args.get("end_bar").asInt(),
-                args.get("to_bpm").asInt(), optStr(args, "curve")));
+                args.get("start_bar").asNumber().toNumber().intValue(), args.get("end_bar").asNumber().toNumber().intValue(),
+                args.get("to_bpm").asNumber().toNumber().intValue(), optStr(args, "curve")));
     }
 
     private static McpTool scoreSaveTool(final CompositionContextProvider provider) {
@@ -995,18 +994,18 @@ public final class MusicMcpTools {
 
     @FunctionalInterface
     private interface ContextToolHandler {
-        ToolResult handle(CompositionContext ctx, JsonNode args) throws Exception;
+        ToolResult handle(CompositionContext ctx, JsonValue args) throws Exception;
     }
 
     @FunctionalInterface
     private interface NoContextToolHandler {
-        ToolResult handle(JsonNode args) throws Exception;
+        ToolResult handle(JsonValue args) throws Exception;
     }
 
     private static McpTool tool(final CompositionContextProvider provider,
                                 final String name,
                                 final String description,
-                                final ObjectNode schema,
+                                final JsonObject schema,
                                 final ContextToolHandler handler) {
         return new McpTool() {
             @Override
@@ -1020,14 +1019,14 @@ public final class MusicMcpTools {
             }
 
             @Override
-            public ObjectNode inputSchema() {
+            public JsonObject inputSchema() {
                 return schema;
             }
 
             @Override
-            public McpToolResult call(final JsonNode arguments) {
+            public McpToolResult call(final JsonValue arguments) {
                 try {
-                    final JsonNode args = arguments != null ? arguments : MAPPER.createObjectNode();
+                    final JsonValue args = arguments != null ? arguments : JsonObject.builder().build();
                     final CompositionContext ctx = provider.get();
                     final ToolResult result = ScopedValue.where(MusicCodeModel.CURRENT, ctx.codeModel())
                         .call(() -> handler.handle(ctx, args));
@@ -1043,7 +1042,7 @@ public final class MusicMcpTools {
 
     private static McpTool toolNoCtx(final String name,
                                      final String description,
-                                     final ObjectNode schema,
+                                     final JsonObject schema,
                                      final NoContextToolHandler handler) {
         return new McpTool() {
             @Override
@@ -1057,14 +1056,14 @@ public final class MusicMcpTools {
             }
 
             @Override
-            public ObjectNode inputSchema() {
+            public JsonObject inputSchema() {
                 return schema;
             }
 
             @Override
-            public McpToolResult call(final JsonNode arguments) {
+            public McpToolResult call(final JsonValue arguments) {
                 try {
-                    final JsonNode args = arguments != null ? arguments : MAPPER.createObjectNode();
+                    final JsonValue args = arguments != null ? arguments : JsonObject.builder().build();
                     final ToolResult result = handler.handle(args);
                     return toMcpResult(result);
                 } catch (final IllegalArgumentException e) {
@@ -1095,67 +1094,75 @@ public final class MusicMcpTools {
 
     // --- Schema builders ---
 
-    private static ObjectNode buildObjectSchema(final Map<String, ObjectNode> properties,
+    private static JsonObject buildObjectSchema(final Map<String, JsonObject> properties,
                                                 final List<String> required) {
-        final ObjectNode schema = MAPPER.createObjectNode();
-        schema.put("type", "object");
-        final ObjectNode props = MAPPER.createObjectNode();
-        properties.forEach(props::set);
-        schema.set("properties", props);
-        final var requiredArray = MAPPER.createArrayNode();
+        final var props = JsonObject.builder();
+        properties.forEach(props::put);
+        final var requiredArray = JsonArray.builder();
         required.forEach(requiredArray::add);
-        schema.set("required", requiredArray);
-        return schema;
+        return JsonObject.builder()
+            .put("type", "object")
+            .put("properties", props.build())
+            .put("required", requiredArray.build())
+            .build();
     }
 
-    private static ObjectNode emptySchema() {
-        final ObjectNode schema = MAPPER.createObjectNode();
-        schema.put("type", "object");
-        schema.set("properties", MAPPER.createObjectNode());
-        return schema;
+    private static JsonObject emptySchema() {
+        return JsonObject.builder()
+            .put("type", "object")
+            .put("properties", JsonObject.builder().build())
+            .build();
     }
 
-    private static ObjectNode strProp(final String description) {
-        final ObjectNode node = MAPPER.createObjectNode();
-        node.put("type", "string");
-        node.put("description", description);
-        return node;
+    private static JsonObject strProp(final String description) {
+        return JsonObject.builder()
+            .put("type", "string")
+            .put("description", description)
+            .build();
     }
 
-    private static ObjectNode intProp(final String description) {
-        final ObjectNode node = MAPPER.createObjectNode();
-        node.put("type", "integer");
-        node.put("description", description);
-        return node;
+    private static JsonObject intProp(final String description) {
+        return JsonObject.builder()
+            .put("type", "integer")
+            .put("description", description)
+            .build();
     }
 
-    private static ObjectNode enumProp(final String description, final List<String> values) {
-        final ObjectNode node = MAPPER.createObjectNode();
-        node.put("type", "string");
-        node.put("description", description);
-        final var enumArray = MAPPER.createArrayNode();
+    private static JsonObject enumProp(final String description, final List<String> values) {
+        final var enumArray = JsonArray.builder();
         values.forEach(enumArray::add);
-        node.set("enum", enumArray);
-        return node;
+        return JsonObject.builder()
+            .put("type", "string")
+            .put("description", description)
+            .put("enum", enumArray.build())
+            .build();
     }
 
     // --- Arg extractors ---
 
-    private static String str(final JsonNode args, final String key) {
-        final JsonNode node = args.get(key);
-        if (node == null || node.isNull()) {
+    private static String str(final JsonValue args, final String key) {
+        final JsonValue node = args.get(key);
+        if (node instanceof JsonNull) {
             throw new IllegalArgumentException("Missing required argument '" + key + "'.");
         }
-        return node.asText();
+        return node.asString().value();
     }
 
-    private static String optStr(final JsonNode args, final String key) {
-        final JsonNode node = args.get(key);
-        return (node == null || node.isNull() || node.asText().isBlank()) ? null : node.asText();
+    private static String optStr(final JsonValue args, final String key) {
+        final JsonValue node = args.get(key);
+        if (node instanceof JsonNull) {
+            return null;
+        }
+        final String v = node.asString().value();
+        return v.isBlank() ? null : v;
     }
 
-    private static Integer optInt(final JsonNode args, final String key) {
-        final JsonNode node = args.get(key);
-        return (node == null || node.isNull()) ? null : node.asInt();
+    private static Integer optInt(final JsonValue args, final String key) {
+        final JsonValue node = args.get(key);
+        return node instanceof JsonNull ? null : node.asNumber().toNumber().intValue();
+    }
+
+    private static boolean has(final JsonValue args, final String key) {
+        return !(args.get(key) instanceof JsonNull);
     }
 }

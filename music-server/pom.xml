@@ -29,6 +29,10 @@
         </dependency>
         <dependency>
             <groupId>build.base</groupId>
+            <artifactId>base-json</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>build.base</groupId>
             <artifactId>base-network</artifactId>
         </dependency>
         <dependency>

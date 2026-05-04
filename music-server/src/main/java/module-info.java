@@ -7,6 +7,7 @@ module build.music.server {
     requires build.serve.health;
     requires build.serve.htmx;
     requires build.serve.sse;
+    requires build.base.json;
     requires build.base.network;
     requires build.base.template;
 

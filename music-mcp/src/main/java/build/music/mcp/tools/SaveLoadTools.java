@@ -11,8 +11,6 @@ import build.music.mcp.ToolResult;
 import build.music.midi.MidiReader;
 import build.music.pitch.typesystem.MusicCodeModel;
 import build.music.score.Voice;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.StreamReadFeature;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -190,14 +188,8 @@ public final class SaveLoadTools {
 
         final Marshalled<CompositionSnapshot> marshalled = marshaller.marshal(snapshot);
 
-        final JsonFactory factory = JsonFactory.builder()
-            .enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION)
-            .build();
         final StringWriter writer = new StringWriter();
-        try (var generator = factory.createGenerator(writer)) {
-            generator.useDefaultPrettyPrinter();
-            transport.write(marshalled, generator);
-        }
+        transport.write(marshalled, writer);
         return writer.toString();
     }
 
@@ -206,12 +198,7 @@ public final class SaveLoadTools {
         marshaller.bind(MusicCodeModel.class).to(ctx.codeModel());
         final JsonTransport transport = MusicMarshalling.configuredTransport(ctx.codeModel().getNameProvider());
 
-        final JsonFactory factory = JsonFactory.builder()
-            .enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION)
-            .build();
-        try (var parser = factory.createParser(new StringReader(json))) {
-            final Marshalled<CompositionSnapshot> transported = transport.read(parser);
-            return marshaller.unmarshal(transported);
-        }
+        final Marshalled<CompositionSnapshot> transported = transport.read(new StringReader(json));
+        return marshaller.unmarshal(transported);
     }
 }

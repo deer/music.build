@@ -81,6 +81,10 @@
         </dependency>
         <dependency>
             <groupId>build.base</groupId>
+            <artifactId>base-json</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>build.base</groupId>
             <artifactId>base-transport-json</artifactId>
         </dependency>
         <dependency>
@@ -90,14 +94,6 @@
         <dependency>
             <groupId>build.serve</groupId>
             <artifactId>serve-mcp</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
