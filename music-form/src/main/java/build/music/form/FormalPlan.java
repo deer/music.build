@@ -121,6 +121,9 @@ public final class FormalPlan
 
         int channel = 0;
         for (final String voiceName : allVoiceNames) {
+            if (channel % 16 == 9) {
+                channel++; // skip GM percussion channel for melodic voices
+            }
             passCounts.clear();
             final List<Voice> voiceParts = new ArrayList<>();
 
