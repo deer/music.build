@@ -44,6 +44,11 @@ public final class RomanNumeral
     }
 
     public static RomanNumeral of(final ScaleDegree degree, final ChordQuality quality, final boolean inverted) {
+        return of(degree, quality, inverted, false);
+    }
+
+    public static RomanNumeral of(final ScaleDegree degree, final ChordQuality quality,
+                                  final boolean inverted, final boolean flatted) {
         Objects.requireNonNull(degree, "degree must not be null");
         Objects.requireNonNull(quality, "quality must not be null");
         final RomanNumeral rn = new RomanNumeral(MusicCodeModel.current());
@@ -51,6 +56,9 @@ public final class RomanNumeral
         rn.addTrait(quality);
         if (inverted) {
             rn.addTrait(InvertedMarker.INSTANCE);
+        }
+        if (flatted) {
+            rn.addTrait(FlatPrefixMarker.INSTANCE);
         }
         return rn;
     }
@@ -69,6 +77,10 @@ public final class RomanNumeral
         return hasTrait(InvertedMarker.class);
     }
 
+    public boolean flatted() {
+        return hasTrait(FlatPrefixMarker.class);
+    }
+
     // ── derived ───────────────────────────────────────────────────────────────
 
     /**
@@ -76,6 +88,11 @@ public final class RomanNumeral
      */
     public ChordSymbol chordInKey(final Key key) {
         final SpelledPitch tonicPitch = key.scale().degree(degree().number(), 4);
+        if (flatted()) {
+            final build.music.pitch.Accidental lowered =
+                build.music.pitch.Accidental.fromOffset(tonicPitch.accidental().semitoneOffset() - 1);
+            return ChordSymbol.of(tonicPitch.name(), lowered, quality());
+        }
         return ChordSymbol.of(tonicPitch.name(), tonicPitch.accidental(), quality());
     }
 
@@ -144,7 +161,7 @@ public final class RomanNumeral
             };
         }
 
-        return RomanNumeral.of(degree, quality, false);
+        return RomanNumeral.of(degree, quality, false, hasFlatPrefix);
     }
 
     /**
@@ -215,6 +232,6 @@ public final class RomanNumeral
             default -> "";
         };
 
-        return base + suffix;
+        return (flatted() ? "b" : "") + base + suffix;
     }
 }
