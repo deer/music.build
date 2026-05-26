@@ -18,6 +18,7 @@ import build.music.mcp.tools.VoiceOpTools;
 import build.music.mcp.tools.VoiceTools;
 import build.music.pitch.typesystem.MusicCodeModel;
 import build.serve.mcp.McpContent;
+import build.serve.mcp.McpResourceContent;
 import build.serve.mcp.McpServer;
 import build.serve.mcp.McpTool;
 import build.serve.mcp.McpToolResult;
@@ -1086,8 +1087,9 @@ public final class MusicMcpTools {
             return McpToolResult.text(text);
         }
         final List<McpContent.Resource> resources = result.artifacts().stream()
-            .map(a -> new McpContent.Resource(a.name(), a.mimeType(),
+            .map(a -> new McpResourceContent.Text(a.name(), a.mimeType(),
                 Base64.getEncoder().encodeToString(a.data())))
+            .map(McpContent.Resource::new)
             .toList();
         return McpToolResult.withResources(text, resources);
     }
