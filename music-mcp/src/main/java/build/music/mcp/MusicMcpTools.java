@@ -1,9 +1,5 @@
 package build.music.mcp;
 
-import build.base.json.JsonArray;
-import build.base.json.JsonNull;
-import build.base.json.JsonObject;
-import build.base.json.JsonValue;
 import build.music.mcp.tools.DrumPresets;
 import build.music.mcp.tools.ExportTools;
 import build.music.mcp.tools.FormTools;
@@ -16,15 +12,11 @@ import build.music.mcp.tools.ScoreTools;
 import build.music.mcp.tools.TransformTools;
 import build.music.mcp.tools.VoiceOpTools;
 import build.music.mcp.tools.VoiceTools;
-import build.music.pitch.typesystem.MusicCodeModel;
-import build.serve.mcp.McpContent;
-import build.serve.mcp.McpResourceContent;
 import build.serve.mcp.McpServer;
 import build.serve.mcp.McpTool;
-import build.serve.mcp.McpToolResult;
-import build.serve.mcp.McpTools;
+import build.serve.mcp.McpToolAnnotations;
+import build.serve.mcp.ToolParam;
 
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +32,20 @@ public final class MusicMcpTools {
 
     private MusicMcpTools() {
     }
+
+    private static final McpToolAnnotations READ_ONLY =
+        McpToolAnnotations.builder().readOnlyHint(true).build();
+    private static final McpToolAnnotations DESTRUCTIVE =
+        McpToolAnnotations.builder().destructiveHint(true).build();
+    private static final McpToolAnnotations IDEMPOTENT =
+        McpToolAnnotations.builder().idempotentHint(true).build();
+    private static final McpToolAnnotations OPEN_WORLD =
+        McpToolAnnotations.builder().openWorldHint(true).build();
+
+    private static final List<String> DYNAMICS =
+        List.of("ppp", "pp", "p", "mp", "mf", "f", "ff", "fff");
+    private static final List<String> CURVE =
+        List.of("linear", "exponential");
 
     public static void registerAll(final McpServer.Builder builder,
                                    final CompositionContextProvider provider,
@@ -120,7 +126,11 @@ public final class MusicMcpTools {
     // --- Tool factory methods ---
 
     private static McpTool voiceCreateTool(final CompositionContextProvider provider) {
-        return tool(provider,
+        final var name = ToolParam.string("name", "Voice name (e.g. 'melody', 'bass', 'counterpoint')")
+            .minLength(1);
+        final var notes = ToolParam.string("notes", "Note sequence, e.g. 'E4/q E4/q F4/q G4/q G4/q F4/q E4/q D4/q'")
+            .minLength(1);
+        return MusicToolDef.of(provider,
             "voice.create",
             "Create a named voice from a note sequence. " +
                 "The voice is added to the composition and can be used for export or transformation. " +
@@ -129,117 +139,136 @@ public final class MusicMcpTools {
                 "Rests: 'r/q' = quarter rest. " +
                 "Chords: '<C4 E4 G4>/q' = C major triad as quarter chord. " +
                 "Articulations: append ~stac (staccato), ~acc (accent), ~ten (tenuto), ~marc (marcato), ~leg (legato). " +
-                "Example: 'C4/q~stac D4/e E4/e <F4 A4 C5>/h r/q'",
-            McpTools.schema(
-                Map.of(
-                    "name", "Voice name (e.g. 'melody', 'bass', 'counterpoint')",
-                    "notes", "Note sequence, e.g. 'E4/q E4/q F4/q G4/q G4/q F4/q E4/q D4/q'"
-                ),
-                List.of("name", "notes")),
-            (ctx, args) -> VoiceTools.createVoice(ctx, str(args, "name"), str(args, "notes"))
-        );
+                "Example: 'C4/q~stac D4/e E4/e <F4 A4 C5>/h r/q'")
+            .param(name)
+            .param(notes)
+            .handle((ctx, args) -> VoiceTools.createVoice(ctx, name.extract(args), notes.extract(args)));
     }
 
     private static McpTool voiceAppendTool(final CompositionContextProvider provider) {
-        return tool(provider,
+        final var name = ToolParam.string("name", "Name of the existing voice to append to")
+            .minLength(1);
+        final var notes = ToolParam.string("notes", "Note sequence to append")
+            .minLength(1);
+        return MusicToolDef.of(provider,
             "voice.append",
             "Append additional notes to an existing voice. " +
                 "Uses the same note format as voice.create: 'pitch/duration' tokens, chords '<C4 E4 G4>/q', and rests 'r/q'. " +
-                "Example: build a melody bar-by-bar — create with voice.create, then voice.append each new bar.",
-            McpTools.schema(
-                Map.of(
-                    "name", "Name of the existing voice to append to",
-                    "notes", "Note sequence to append"
-                ),
-                List.of("name", "notes")),
-            (ctx, args) -> VoiceTools.appendToVoice(ctx, str(args, "name"), str(args, "notes"))
-        );
+                "Example: build a melody bar-by-bar — create with voice.create, then voice.append each new bar.")
+            .param(name)
+            .param(notes)
+            .handle((ctx, args) -> VoiceTools.appendToVoice(ctx, name.extract(args), notes.extract(args)));
     }
 
     private static McpTool voiceFromMotifTool(final CompositionContextProvider provider) {
-        return tool(provider,
+        final var voiceName = ToolParam.string("voice_name", "Name for the new voice")
+            .minLength(1);
+        final var motifName = ToolParam.string("motif_name", "Name of the motif to copy")
+            .minLength(1);
+        final var transform = ToolParam.string("transform", "Optional: transpose, invert, retrograde, or augment")
+            .values(List.of("transpose", "invert", "retrograde", "augment"))
+            .optional();
+        final var interval = ToolParam.string("interval", "For transpose: interval string, e.g. 'P5', 'm3', 'M2'")
+            .minLength(1)
+            .optional();
+        final var direction = ToolParam.string("direction", "For transpose: direction")
+            .values(List.of("up", "down"))
+            .optional();
+        final var axis = ToolParam.string("axis", "For invert: axis pitch, e.g. 'C4'")
+            .minLength(1)
+            .optional();
+        final var factor = ToolParam.string("factor", "For augment: fraction string, e.g. '2/1', '1/2', '3/2'")
+            .minLength(1)
+            .optional();
+        return MusicToolDef.of(provider,
             "voice.from_motif",
             "Advanced: Create a voice by applying a transform to a saved motif. " +
                 "Example: take 'theme_a', transpose up P5, and use it as a new voice. " +
                 "transform values: 'transpose' (requires interval arg, e.g. 'P5'), " +
                 "'invert' (requires axis arg, e.g. 'C4'), 'retrograde', " +
                 "'augment' (requires factor arg, e.g. '2/1'). " +
-                "Omit transform to copy the motif unchanged.",
-            buildObjectSchema(
-                Map.of(
-                    "voice_name", strProp("Name for the new voice"),
-                    "motif_name", strProp("Name of the motif to copy"),
-                    "transform", strProp("Optional: transpose, invert, retrograde, or augment"),
-                    "interval", strProp("For transpose: interval string, e.g. 'P5', 'm3', 'M2'"),
-                    "direction", enumProp("For transpose: direction", List.of("up", "down")),
-                    "axis", strProp("For invert: axis pitch, e.g. 'C4'"),
-                    "factor", strProp("For augment: fraction string, e.g. '2/1', '1/2', '3/2'")
-                ),
-                List.of("voice_name", "motif_name")),
-            (ctx, args) -> {
-                final String transform = optStr(args, "transform");
+                "Omit transform to copy the motif unchanged.")
+            .param(voiceName)
+            .param(motifName)
+            .param(transform)
+            .param(interval)
+            .param(direction)
+            .param(axis)
+            .param(factor)
+            .handle((ctx, args) -> {
+                final String transformVal = transform.extract(args);
                 Map<String, String> transformArgs = null;
-                if (transform != null) {
+                if (transformVal != null) {
                     transformArgs = new HashMap<>();
-                    if (has(args, "interval")) {
-                        transformArgs.put("interval", str(args, "interval"));
+                    final String intervalVal = interval.extract(args);
+                    if (intervalVal != null) {
+                        transformArgs.put("interval", intervalVal);
                     }
-                    if (has(args, "direction")) {
-                        transformArgs.put("direction", str(args, "direction"));
+                    final String directionVal = direction.extract(args);
+                    if (directionVal != null) {
+                        transformArgs.put("direction", directionVal);
                     }
-                    if (has(args, "axis")) {
-                        transformArgs.put("axis", str(args, "axis"));
+                    final String axisVal = axis.extract(args);
+                    if (axisVal != null) {
+                        transformArgs.put("axis", axisVal);
                     }
-                    if (has(args, "factor")) {
-                        transformArgs.put("factor", str(args, "factor"));
+                    final String factorVal = factor.extract(args);
+                    if (factorVal != null) {
+                        transformArgs.put("factor", factorVal);
                     }
                 }
-                return VoiceTools.createVoiceFromMotif(ctx, str(args, "voice_name"), str(args, "motif_name"),
-                    transform, transformArgs);
-            }
-        );
+                return VoiceTools.createVoiceFromMotif(ctx, voiceName.extract(args), motifName.extract(args),
+                    transformVal, transformArgs);
+            });
     }
 
     private static McpTool voiceListTool(final CompositionContextProvider provider) {
-        return tool(provider,
+        return MusicToolDef.of(provider,
             "voice.list",
-            "List all voices in the current composition with bar counts, event counts, and total duration.",
-            emptySchema(),
-            (ctx, args) -> VoiceTools.listVoices(ctx)
-        );
+            "List all voices in the current composition with bar counts, event counts, and total duration.")
+            .annotations(READ_ONLY)
+            .handle((ctx, args) -> VoiceTools.listVoices(ctx));
     }
 
     private static McpTool voiceDeleteTool(final CompositionContextProvider provider) {
-        return tool(provider,
+        final var name = ToolParam.string("name", "Name of the voice to delete")
+            .minLength(1);
+        return MusicToolDef.of(provider,
             "voice.delete",
             "Remove a voice from the composition. Use this to clean up scratch or scaffolding voices " +
-                "that should not appear in the final score or form sections.",
-            McpTools.schema(
-                Map.of("name", "Name of the voice to delete"),
-                List.of("name")),
-            (ctx, args) -> VoiceOpTools.deleteVoice(ctx, str(args, "name"))
-        );
+                "that should not appear in the final score or form sections.")
+            .param(name)
+            .handle((ctx, args) -> VoiceOpTools.deleteVoice(ctx, name.extract(args)));
     }
 
     private static McpTool scoreSetMetadataTool(final CompositionContextProvider provider) {
-        return tool(provider,
+        final var title = ToolParam.string("title", "Composition title")
+            .minLength(1)
+            .optional();
+        final var tempo = ToolParam.integer("tempo", "Tempo in BPM (1–400)")
+            .min(1).max(400)
+            .optional();
+        final var timeSignature = ToolParam.string("time_signature", "Time signature, e.g. '4/4', '3/4', '6/8'")
+            .minLength(3)
+            .optional();
+        return MusicToolDef.of(provider,
             "score.set_metadata",
             "Set the title, tempo, and/or time signature of the composition. " +
                 "All parameters are optional — only provided values are updated. " +
-                "Time signature format: '4/4', '3/4', '6/8', etc.",
-            buildObjectSchema(
-                Map.of(
-                    "title", strProp("Composition title"),
-                    "tempo", intProp("Tempo in BPM (1-400)"),
-                    "time_signature", strProp("Time signature, e.g. '4/4', '3/4', '6/8'")
-                ),
-                List.of()),
-            (ctx, args) -> ScoreTools.setMetadata(ctx, optStr(args, "title"), optInt(args, "tempo"), optStr(args, "time_signature"))
-        );
+                "Time signature format: '4/4', '3/4', '6/8', etc.")
+            .param(title)
+            .param(tempo)
+            .param(timeSignature)
+            .annotations(IDEMPOTENT)
+            .handle((ctx, args) -> ScoreTools.setMetadata(ctx, title.extract(args), tempo.extract(args), timeSignature.extract(args)));
     }
 
     private static McpTool scoreAssignInstrumentTool(final CompositionContextProvider provider) {
-        return tool(provider,
+        final var voice = ToolParam.string("voice", "Name of the voice to assign")
+            .minLength(1);
+        final var instrument = ToolParam.string("instrument", "Instrument name (e.g. 'piano', 'strings', 'flute')")
+            .minLength(1);
+        return MusicToolDef.of(provider,
             "score.assign_instrument",
             "Assign a voice to a MIDI instrument for playback and export. " +
                 "Keyboards: piano, bright_piano, honky_tonk, electric_piano (Rhodes), rhodes, harpsichord, organ, accordion. " +
@@ -250,325 +279,371 @@ public final class MusicMcpTools {
                 "Brass/winds: trumpet, trombone, tuba, french_horn, brass, saxophone, clarinet, flute, oboe, bassoon. " +
                 "Synth: synth_lead (sawtooth), synth_pad (warm pad). " +
                 "Percussion: drums (forces channel 9, GM drum map). " +
-                "Example: assign 'melody' to 'synth_lead', 'chords' to 'electric_piano', 'kick' to 'drums'.",
-            McpTools.schema(
-                Map.of(
-                    "voice", "Name of the voice to assign",
-                    "instrument", "Instrument name (e.g. 'piano', 'strings', 'flute')"
-                ),
-                List.of("voice", "instrument")),
-            (ctx, args) -> ScoreTools.assignInstrument(ctx, str(args, "voice"), str(args, "instrument"))
-        );
+                "Example: assign 'melody' to 'synth_lead', 'chords' to 'electric_piano', 'kick' to 'drums'.")
+            .param(voice)
+            .param(instrument)
+            .annotations(IDEMPOTENT)
+            .handle((ctx, args) -> ScoreTools.assignInstrument(ctx, voice.extract(args), instrument.extract(args)));
     }
 
     private static McpTool scoreDescribeTool(final CompositionContextProvider provider) {
-        return tool(provider,
+        return MusicToolDef.of(provider,
             "score.describe",
             "Get a complete description of the current composition state: " +
                 "title, tempo, time signature, all voices with note counts, motifs, and instrument assignments. " +
-                "Call this to understand the current state before deciding what to do next.",
-            emptySchema(),
-            (ctx, args) -> ScoreTools.describeScore(ctx)
-        );
+                "Call this to understand the current state before deciding what to do next.")
+            .annotations(READ_ONLY)
+            .handle((ctx, args) -> ScoreTools.describeScore(ctx));
     }
 
     private static McpTool scoreClearTool(final CompositionContextProvider provider) {
-        return tool(provider,
+        return MusicToolDef.of(provider,
             "score.clear",
             "Clear the entire composition and start fresh. " +
-                "Removes all voices, motifs, and instrument assignments. Resets title and tempo to defaults.",
-            emptySchema(),
-            (ctx, args) -> ScoreTools.clearScore(ctx)
-        );
+                "Removes all voices, motifs, and instrument assignments. Resets title and tempo to defaults.")
+            .annotations(DESTRUCTIVE)
+            .handle((ctx, args) -> ScoreTools.clearScore(ctx));
     }
 
     private static McpTool transformTransposeTool(final CompositionContextProvider provider) {
-        return tool(provider,
+        final var voice = ToolParam.string("voice", "Name of the voice to transpose")
+            .minLength(1);
+        final var interval = ToolParam.string("interval", "Interval string, e.g. 'P5', 'm3', 'M2'")
+            .minLength(2);
+        final var direction = ToolParam.string("direction", "Direction of transposition")
+            .values(List.of("up", "down"))
+            .optional("up");
+        final var targetVoice = ToolParam.string("target_voice", "Optional: name for the resulting voice")
+            .minLength(1)
+            .optional();
+        return MusicToolDef.of(provider,
             "transform.transpose",
             "Transpose all notes in a voice by a chromatic interval. " +
                 "Interval format: quality+size — 'P5' (perfect fifth), 'm3' (minor third), " +
                 "'M2' (major second), 'P8' (octave), 'A4' (augmented fourth/tritone). " +
                 "Creates a new voice named '{voice}_transposed' unless target_voice is specified. " +
-                "Example: transpose 'melody' up by M3 to create a parallel third harmony voice.",
-            buildObjectSchema(
-                Map.of(
-                    "voice", strProp("Name of the voice to transpose"),
-                    "interval", strProp("Interval string, e.g. 'P5', 'm3', 'M2'"),
-                    "direction", enumProp("Direction of transposition", List.of("up", "down")),
-                    "target_voice", strProp("Optional: name for the resulting voice")
-                ),
-                List.of("voice", "interval")),
-            (ctx, args) -> TransformTools.transpose(ctx, str(args, "voice"), str(args, "interval"),
-                optStr(args, "direction") != null ? optStr(args, "direction") : "up",
-                optStr(args, "target_voice"))
-        );
+                "Example: transpose 'melody' up by M3 to create a parallel third harmony voice.")
+            .param(voice)
+            .param(interval)
+            .param(direction)
+            .param(targetVoice)
+            .handle((ctx, args) -> TransformTools.transpose(ctx, voice.extract(args), interval.extract(args),
+                direction.extract(args), targetVoice.extract(args)));
     }
 
     private static McpTool transformInvertTool(final CompositionContextProvider provider) {
-        return tool(provider,
+        final var voice = ToolParam.string("voice", "Name of the voice to invert")
+            .minLength(1);
+        final var axis = ToolParam.string("axis", "Axis pitch to invert around, e.g. 'C4', 'E4'")
+            .minLength(2);
+        final var targetVoice = ToolParam.string("target_voice", "Optional: name for the resulting voice")
+            .minLength(1)
+            .optional();
+        return MusicToolDef.of(provider,
             "transform.invert",
             "Advanced: Invert a voice around an axis pitch (mirror melodic intervals). " +
                 "Each note is reflected to the same interval below the axis that it was above it. " +
-                "Creates a new voice named '{voice}_inverted' unless target_voice is specified.",
-            buildObjectSchema(
-                Map.of(
-                    "voice", strProp("Name of the voice to invert"),
-                    "axis", strProp("Axis pitch to invert around, e.g. 'C4', 'E4'"),
-                    "target_voice", strProp("Optional: name for the resulting voice")
-                ),
-                List.of("voice", "axis")),
-            (ctx, args) -> TransformTools.invert(ctx, str(args, "voice"), str(args, "axis"), optStr(args, "target_voice"))
-        );
+                "Creates a new voice named '{voice}_inverted' unless target_voice is specified.")
+            .param(voice)
+            .param(axis)
+            .param(targetVoice)
+            .handle((ctx, args) -> TransformTools.invert(ctx, voice.extract(args), axis.extract(args), targetVoice.extract(args)));
     }
 
     private static McpTool transformRetrogradeTool(final CompositionContextProvider provider) {
-        return tool(provider,
+        final var voice = ToolParam.string("voice", "Name of the voice to reverse")
+            .minLength(1);
+        final var targetVoice = ToolParam.string("target_voice", "Optional: name for the resulting voice")
+            .minLength(1)
+            .optional();
+        return MusicToolDef.of(provider,
             "transform.retrograde",
             "Advanced: Reverse the temporal order of all events in a voice (play it backwards). " +
-                "Creates a new voice named '{voice}_retrograde' unless target_voice is specified.",
-            buildObjectSchema(
-                Map.of(
-                    "voice", strProp("Name of the voice to reverse"),
-                    "target_voice", strProp("Optional: name for the resulting voice")
-                ),
-                List.of("voice")),
-            (ctx, args) -> TransformTools.retrograde(ctx, str(args, "voice"), optStr(args, "target_voice"))
-        );
+                "Creates a new voice named '{voice}_retrograde' unless target_voice is specified.")
+            .param(voice)
+            .param(targetVoice)
+            .handle((ctx, args) -> TransformTools.retrograde(ctx, voice.extract(args), targetVoice.extract(args)));
     }
 
     private static McpTool transformAugmentTool(final CompositionContextProvider provider) {
-        return tool(provider,
+        final var voice = ToolParam.string("voice", "Name of the voice to scale")
+            .minLength(1);
+        final var factor = ToolParam.string("factor", "Duration scale factor as fraction, e.g. '2/1', '1/2', '3/2'")
+            .minLength(3);
+        final var targetVoice = ToolParam.string("target_voice", "Optional: name for the resulting voice")
+            .minLength(1)
+            .optional();
+        return MusicToolDef.of(provider,
             "transform.augment",
             "Advanced: Scale all durations in a voice by a rational factor. " +
                 "Factor '2/1' = augmentation (double duration), '1/2' = diminution (halve), '3/2' = dotted feel. " +
-                "Creates a new voice named '{voice}_augmented' unless target_voice is specified.",
-            buildObjectSchema(
-                Map.of(
-                    "voice", strProp("Name of the voice to scale"),
-                    "factor", strProp("Duration scale factor as fraction, e.g. '2/1', '1/2', '3/2'"),
-                    "target_voice", strProp("Optional: name for the resulting voice")
-                ),
-                List.of("voice", "factor")),
-            (ctx, args) -> TransformTools.augment(ctx, str(args, "voice"), str(args, "factor"), optStr(args, "target_voice"))
-        );
+                "Creates a new voice named '{voice}_augmented' unless target_voice is specified.")
+            .param(voice)
+            .param(factor)
+            .param(targetVoice)
+            .handle((ctx, args) -> TransformTools.augment(ctx, voice.extract(args), factor.extract(args), targetVoice.extract(args)));
     }
 
     private static McpTool motifSaveTool(final CompositionContextProvider provider) {
-        return tool(provider,
+        final var voice = ToolParam.string("voice", "Name of the voice to extract from")
+            .minLength(1);
+        final var motifName = ToolParam.string("motif_name", "Name to give the saved motif")
+            .minLength(1);
+        final var startNote = ToolParam.integer("start_note", "0-based start index (inclusive), default 0")
+            .min(0)
+            .optional();
+        final var endNote = ToolParam.integer("end_note", "0-based end index (exclusive), default = end of voice")
+            .min(1)
+            .optional();
+        return MusicToolDef.of(provider,
             "motif.save",
             "Save a slice of a voice as a named motif for later reuse with voice.from_motif. " +
                 "start_note and end_note are 0-based indices (end_note is exclusive). " +
                 "Omit both to save the entire voice. " +
-                "Example: save the first 4 notes of 'melody' as 'opening_theme', then use voice.from_motif to create variations.",
-            buildObjectSchema(
-                Map.of(
-                    "voice", strProp("Name of the voice to extract from"),
-                    "motif_name", strProp("Name to give the saved motif"),
-                    "start_note", intProp("0-based start index (inclusive), default 0"),
-                    "end_note", intProp("0-based end index (exclusive), default = end of voice")
-                ),
-                List.of("voice", "motif_name")),
-            (ctx, args) -> TransformTools.saveMotif(ctx, str(args, "voice"), str(args, "motif_name"),
-                optInt(args, "start_note"), optInt(args, "end_note"))
-        );
+                "Example: save the first 4 notes of 'melody' as 'opening_theme', then use voice.from_motif to create variations.")
+            .param(voice)
+            .param(motifName)
+            .param(startNote)
+            .param(endNote)
+            .handle((ctx, args) -> TransformTools.saveMotif(ctx, voice.extract(args), motifName.extract(args),
+                startNote.extract(args), endNote.extract(args)));
     }
 
     private static McpTool queryVoiceTool(final CompositionContextProvider provider) {
-        return tool(provider,
+        final var voice = ToolParam.string("voice", "Name of the voice to display")
+            .minLength(1);
+        return MusicToolDef.of(provider,
             "query.voice",
             "Display the notes of a specific voice in a human-readable format with bar lines. " +
-                "Use this to inspect a voice before transforming or exporting.",
-            McpTools.schema(
-                Map.of("voice", "Name of the voice to display"),
-                List.of("voice")),
-            (ctx, args) -> QueryTools.queryVoice(ctx, str(args, "voice"))
-        );
+                "Use this to inspect a voice before transforming or exporting.")
+            .param(voice)
+            .annotations(READ_ONLY)
+            .handle((ctx, args) -> QueryTools.queryVoice(ctx, voice.extract(args)));
     }
 
     private static McpTool queryMotifTool(final CompositionContextProvider provider) {
-        return tool(provider,
+        final var motif = ToolParam.string("motif", "Name of the motif to display")
+            .minLength(1);
+        return MusicToolDef.of(provider,
             "query.motif",
-            "Display the notes of a saved motif.",
-            McpTools.schema(
-                Map.of("motif", "Name of the motif to display"),
-                List.of("motif")),
-            (ctx, args) -> QueryTools.queryMotif(ctx, str(args, "motif"))
-        );
+            "Display the notes of a saved motif.")
+            .param(motif)
+            .annotations(READ_ONLY)
+            .handle((ctx, args) -> QueryTools.queryMotif(ctx, motif.extract(args)));
     }
 
     private static McpTool exportAllTool(final CompositionContextProvider provider,
                                          final ExportOptions exportOptions) {
-        return tool(provider,
+        final var folder = ToolParam.string("folder", "Output folder name (optional, defaults to composition title)")
+            .minLength(1)
+            .optional();
+        return MusicToolDef.of(provider,
             "export.all",
             "Export the current composition to a folder containing both a MIDI file (.mid) and " +
                 "LilyPond source (.ly). If LilyPond is installed, also engraves a PDF. " +
                 "The folder is created in the current working directory. " +
-                "Folder name defaults to the composition title if not specified.",
-            buildObjectSchema(
-                Map.of("folder", strProp("Output folder name (optional, defaults to composition title)")),
-                List.of()),
-            (ctx, args) -> ExportTools.exportAll(ctx, optStr(args, "folder"), exportOptions)
-        );
+                "Folder name defaults to the composition title if not specified.")
+            .param(folder)
+            .annotations(OPEN_WORLD)
+            .handle((ctx, args) -> ExportTools.exportAll(ctx, folder.extract(args), exportOptions));
     }
 
     private static McpTool exportMidiTool(final CompositionContextProvider provider,
                                           final ExportOptions exportOptions) {
-        return tool(provider,
+        final var filename = ToolParam.string("filename", "Output filename, e.g. 'my_piece.mid' (optional)")
+            .minLength(1)
+            .optional();
+        return MusicToolDef.of(provider,
             "export.midi",
             "Render the current composition to a Standard MIDI File (.mid). " +
                 "Filename is optional — defaults to '{title}.mid'. " +
-                "Returns the path to the written file.",
-            buildObjectSchema(
-                Map.of("filename", strProp("Output filename, e.g. 'my_piece.mid' (optional)")),
-                List.of()),
-            (ctx, args) -> ExportTools.exportMidi(ctx, optStr(args, "filename"), exportOptions)
-        );
+                "Returns the path to the written file.")
+            .param(filename)
+            .annotations(OPEN_WORLD)
+            .handle((ctx, args) -> ExportTools.exportMidi(ctx, filename.extract(args), exportOptions));
     }
 
     private static McpTool exportLilypondTool(final CompositionContextProvider provider,
                                               final ExportOptions exportOptions) {
-        return tool(provider,
+        final var filename = ToolParam.string("filename", "Output base filename without extension (optional)")
+            .minLength(1)
+            .optional();
+        return MusicToolDef.of(provider,
             "export.lilypond",
             "Render the current composition to LilyPond source (.ly file). " +
                 "If LilyPond is installed on PATH, also engraves to PDF. " +
-                "Returns the LilyPond source text in the data field.",
-            buildObjectSchema(
-                Map.of("filename", strProp("Output base filename without extension (optional)")),
-                List.of()),
-            (ctx, args) -> ExportTools.exportLilypond(ctx, optStr(args, "filename"), exportOptions)
-        );
+                "Returns the LilyPond source text in the data field.")
+            .param(filename)
+            .annotations(OPEN_WORLD)
+            .handle((ctx, args) -> ExportTools.exportLilypond(ctx, filename.extract(args), exportOptions));
     }
 
     private static McpTool exportMusicXmlTool(final CompositionContextProvider provider,
                                               final ExportOptions exportOptions) {
-        return tool(provider,
+        final var filename = ToolParam.string("filename", "Output base filename without extension (optional)")
+            .minLength(1)
+            .optional();
+        return MusicToolDef.of(provider,
             "export.musicxml",
             "Export the current composition to MusicXML 4.0 (.musicxml). " +
                 "MusicXML is the standard interchange format for notation software — " +
                 "opens in MuseScore, Dorico, Sibelius, Finale, and most DAWs. " +
-                "Filename is optional — defaults to '{title}.musicxml'.",
-            buildObjectSchema(
-                Map.of("filename", strProp("Output base filename without extension (optional)")),
-                List.of()),
-            (ctx, args) -> ExportTools.exportMusicXml(ctx, optStr(args, "filename"), exportOptions)
-        );
+                "Filename is optional — defaults to '{title}.musicxml'.")
+            .param(filename)
+            .annotations(OPEN_WORLD)
+            .handle((ctx, args) -> ExportTools.exportMusicXml(ctx, filename.extract(args), exportOptions));
     }
 
     private static McpTool harmonySetKeyTool(final CompositionContextProvider provider) {
-        return tool(provider, "harmony.set_key",
+        final var key = ToolParam.string("key", "Key description, e.g. 'C major', 'G major', 'D minor'")
+            .minLength(1);
+        return MusicToolDef.of(provider, "harmony.set_key",
             "Set the musical key for the composition. " +
                 "Format: 'Tonic Mode' — e.g. 'C major', 'A minor', 'F# minor', 'Bb major'. " +
-                "The key is used for harmonization, diatonic transposition, and chord progressions.",
-            McpTools.schema(Map.of("key", "Key description, e.g. 'C major', 'G major', 'D minor'"),
-                List.of("key")),
-            (ctx, args) -> HarmonyTools.setKey(ctx, str(args, "key")));
+                "The key is used for harmonization, diatonic transposition, and chord progressions.")
+            .param(key)
+            .annotations(IDEMPOTENT)
+            .handle((ctx, args) -> HarmonyTools.setKey(ctx, key.extract(args)));
     }
 
     private static McpTool harmonyChordProgressionTool(final CompositionContextProvider provider) {
-        return tool(provider, "harmony.chord_progression",
+        final var progression = ToolParam.string("progression", "Roman numeral progression, e.g. 'I IV V I', 'ii V I'")
+            .minLength(1);
+        return MusicToolDef.of(provider, "harmony.chord_progression",
             "Set a chord progression using Roman numerals. " +
                 "Format: space or dash-separated Roman numerals, e.g. 'I IV V I', 'ii V I', 'I V vi IV'. " +
                 "Upper case = major chord, lower case = minor, 'o' suffix = diminished, '7' = seventh. " +
-                "Requires harmony.set_key to be called first for full resolution.",
-            McpTools.schema(
-                Map.of("progression", "Roman numeral progression, e.g. 'I IV V I', 'ii V I'"),
-                List.of("progression")),
-            (ctx, args) -> HarmonyTools.setChordProgression(ctx, str(args, "progression")));
+                "Requires harmony.set_key to be called first for full resolution.")
+            .param(progression)
+            .annotations(IDEMPOTENT)
+            .handle((ctx, args) -> HarmonyTools.setChordProgression(ctx, progression.extract(args)));
     }
 
     private static McpTool harmonySetBarsTool(final CompositionContextProvider provider) {
-        return tool(provider, "harmony.set_bars",
+        final var bars = ToolParam.string("bars", "Bar chord string, e.g. '1:Cm7 2:F7 3:Bb7 4:Eb'")
+            .minLength(1);
+        return MusicToolDef.of(provider, "harmony.set_bars",
             "Declare chord changes per measure as concrete chord symbols (not Roman numerals). " +
                 "Format: '1:Cm7 2:F7 3:BbM7 4:Eb' — bar number, colon, chord symbol. " +
                 "Chord qualities: (bare root)=major, m=minor, 7=dom7, maj7, m7, m7b5, dim, dim7, aug, sus2, sus4. " +
                 "Examples: 'Gm7', 'C7', 'Fm7b5', 'Bb7', 'EbM7'. " +
                 "Use for jazz chord sheets, ii-V-I sequences, blues changes. " +
                 "These chords are used by harmony.walking_bass and override harmony.chord_progression for those tools. " +
-                "Example: harmony.set_bars '1:Gm7 2:C7 3:Fm7 4:Bb7 5:Ebmaj7 6:Ebmaj7 7:Cm7 8:D7'",
-            McpTools.schema(
-                Map.of("bars", "Bar chord string, e.g. '1:Cm7 2:F7 3:Bb7 4:Eb'"),
-                List.of("bars")),
-            (ctx, args) -> HarmonyTools.setBarChords(ctx, str(args, "bars")));
+                "Example: harmony.set_bars '1:Gm7 2:C7 3:Fm7 4:Bb7 5:Ebmaj7 6:Ebmaj7 7:Cm7 8:D7'")
+            .param(bars)
+            .annotations(IDEMPOTENT)
+            .handle((ctx, args) -> HarmonyTools.setBarChords(ctx, bars.extract(args)));
     }
 
     private static McpTool harmonyHarmonizeTool(final CompositionContextProvider provider) {
-        return tool(provider, "harmony.harmonize",
+        final var voice = ToolParam.string("voice", "Melody voice to harmonize")
+            .minLength(1);
+        final var targetVoice = ToolParam.string("target_voice", "Name for the harmony voice (optional)")
+            .minLength(1)
+            .optional();
+        final var octave = ToolParam.integer("octave", "Octave for chord roots (0–8), e.g. 3 for bass")
+            .min(0).max(8)
+            .optional(3);
+        return MusicToolDef.of(provider, "harmony.harmonize",
             "Add chord root accompaniment to a melody voice based on the current chord progression. " +
                 "Requires harmony.set_key and harmony.chord_progression to be called first. " +
                 "Creates a new voice with chord roots (one per chord in the progression). " +
-                "Example: key=C major, progression=I IV V I, melody='bass' → creates bass line of C F G C roots.",
-            buildObjectSchema(
-                Map.of("voice", strProp("Melody voice to harmonize"),
-                    "target_voice", strProp("Name for the harmony voice (optional)"),
-                    "octave", intProp("Octave for chord roots, e.g. 3 for bass")),
-                List.of("voice")),
-            (ctx, args) -> HarmonyTools.harmonize(ctx, str(args, "voice"), optStr(args, "target_voice"),
-                has(args, "octave") ? args.get("octave").asNumber().toNumber().intValue() : 3));
+                "Example: key=C major, progression=I IV V I, melody='bass' → creates bass line of C F G C roots.")
+            .param(voice)
+            .param(targetVoice)
+            .param(octave)
+            .handle((ctx, args) -> HarmonyTools.harmonize(ctx, voice.extract(args), targetVoice.extract(args), octave.extract(args)));
     }
 
     private static McpTool harmonySuggestHarmonyTool(final CompositionContextProvider provider) {
-        return tool(provider, "harmony.suggest_harmony",
+        final var voice = ToolParam.string("voice", "Melody voice to analyze")
+            .minLength(1);
+        return MusicToolDef.of(provider, "harmony.suggest_harmony",
             "Analyze a melody voice and suggest a chord progression based on its pitch content. " +
                 "Finds the best-fitting diatonic chord for each measure, saves as current progression. " +
                 "Example result: 'I IV I V' for a simple melody in C major. " +
-                "Requires harmony.set_key to be called first.",
-            McpTools.schema(
-                Map.of("voice", "Melody voice to analyze"),
-                List.of("voice")),
-            (ctx, args) -> HarmonyTools.suggestHarmony(ctx, str(args, "voice")));
+                "Requires harmony.set_key to be called first.")
+            .param(voice)
+            .handle((ctx, args) -> HarmonyTools.suggestHarmony(ctx, voice.extract(args)));
     }
 
     private static McpTool harmonyDetectKeyTool(final CompositionContextProvider provider) {
-        return tool(provider, "harmony.detect_key",
+        final var voice = ToolParam.string("voice", "Voice to analyze for key detection")
+            .minLength(1);
+        return MusicToolDef.of(provider, "harmony.detect_key",
             "Advanced: Detect the likely key of a voice using pitch class distribution analysis. " +
-                "Sets the detected key as the current key. Use harmony.set_key when you know the key.",
-            McpTools.schema(
-                Map.of("voice", "Voice to analyze for key detection"),
-                List.of("voice")),
-            (ctx, args) -> HarmonyTools.detectKey(ctx, str(args, "voice")));
+                "Sets the detected key as the current key. Use harmony.set_key when you know the key.")
+            .param(voice)
+            .handle((ctx, args) -> HarmonyTools.detectKey(ctx, voice.extract(args)));
     }
 
     private static McpTool harmonyDiatonicTransposeTool(final CompositionContextProvider provider) {
-        return tool(provider, "harmony.diatonic_transpose",
+        final var voice = ToolParam.string("voice", "Voice to transpose")
+            .minLength(1);
+        final var steps = ToolParam.integer("steps", "Number of scale steps (positive=up, negative=down)");
+        final var targetVoice = ToolParam.string("target_voice", "Name for result voice (optional)")
+            .minLength(1)
+            .optional();
+        return MusicToolDef.of(provider, "harmony.diatonic_transpose",
             "Transpose a voice by scale steps within the current key, preserving key membership. " +
                 "Example: steps=2 in C major moves C→E, D→F (a diatonic third, not always a major third). " +
                 "Steps=-1 moves down one scale step. " +
-                "Useful for harmonizing in thirds or sixths. Requires harmony.set_key first.",
-            buildObjectSchema(
-                Map.of("voice", strProp("Voice to transpose"),
-                    "steps", intProp("Number of scale steps (positive=up, negative=down)"),
-                    "target_voice", strProp("Name for result voice (optional)")),
-                List.of("voice", "steps")),
-            (ctx, args) -> HarmonyTools.diatonicTranspose(ctx, str(args, "voice"),
-                args.get("steps").asNumber().toNumber().intValue(), optStr(args, "target_voice")));
+                "Useful for harmonizing in thirds or sixths. Requires harmony.set_key first.")
+            .param(voice)
+            .param(steps)
+            .param(targetVoice)
+            .handle((ctx, args) -> HarmonyTools.diatonicTranspose(ctx, voice.extract(args), steps.extract(args), targetVoice.extract(args)));
     }
 
     private static McpTool harmonyWalkingBassTool(final CompositionContextProvider provider) {
-        return tool(provider, "harmony.walking_bass",
+        final var targetVoice = ToolParam.string("target_voice", "Name for the bass voice (default: 'bass')")
+            .minLength(1)
+            .optional();
+        final var octave = ToolParam.integer("octave", "Bass octave (0–8, default: 2 — C2 to B2 range)")
+            .min(0).max(8)
+            .optional(2);
+        final var bars = ToolParam.integer("bars", "Number of bars (default: use all defined chords)")
+            .min(1)
+            .optional();
+        final var velocity = ToolParam.string("velocity", "Velocity/dynamics: ppp, pp, p, mp, mf (default), f, ff, fff")
+            .values(DYNAMICS)
+            .optional();
+        final var approach = ToolParam.string("approach", "Approach note style: chromatic (default), diatonic, none")
+            .values(List.of("chromatic", "diatonic", "none"))
+            .optional();
+        return MusicToolDef.of(provider, "harmony.walking_bass",
             "Generate a walking bass line over chord changes, adapted to the current time signature. " +
                 "4/4: root-fifth-third-approach (4 quarter notes). 3/4: root-fifth-fifth. " +
                 "6/8: root-fifth (2 dotted-quarters). 2/4: root-approach. " +
                 "Requires harmony.set_bars (preferred) or harmony.set_key + harmony.chord_progression. " +
                 "Set score.set_swing to add shuffle feel after generating. " +
-                "Example usage: set_bars → walking_bass target_voice='bass' octave=2 → assign to electric_bass.",
-            buildObjectSchema(
-                Map.of(
-                    "target_voice", strProp("Name for the bass voice (default: 'bass')"),
-                    "octave", intProp("Bass octave (default: 2 — C2 to B2 range)"),
-                    "bars", intProp("Number of bars (default: use all defined chords)"),
-                    "velocity", strProp("Velocity/dynamics: ppp, pp, p, mp, mf (default), f, ff, fff"),
-                    "approach", strProp("Approach note style: chromatic (default, 1–2 semitones below), diatonic (scale step below), none (use chord root)")
-                ),
-                List.of()),
-            (ctx, args) -> HarmonyTools.walkingBass(ctx, optStr(args, "target_voice"),
-                has(args, "octave") ? args.get("octave").asNumber().toNumber().intValue() : 2,
-                has(args, "bars") ? args.get("bars").asNumber().toNumber().intValue() : null,
-                optStr(args, "velocity"),
-                optStr(args, "approach")));
+                "Example usage: set_bars → walking_bass target_voice='bass' octave=2 → assign to electric_bass.")
+            .param(targetVoice)
+            .param(octave)
+            .param(bars)
+            .param(velocity)
+            .param(approach)
+            .handle((ctx, args) -> HarmonyTools.walkingBass(ctx, targetVoice.extract(args), octave.extract(args),
+                bars.extract(args), velocity.extract(args), approach.extract(args)));
     }
 
     private static McpTool harmonyCompTool(final CompositionContextProvider provider) {
-        return tool(provider, "harmony.comp",
+        final var targetVoice = ToolParam.string("target_voice", "Name for the comping voice (default: 'comp')")
+            .minLength(1)
+            .optional();
+        final var octave = ToolParam.integer("octave", "Voicing octave (0–8, default: 3 — mid-range)")
+            .min(0).max(8)
+            .optional(3);
+        final var style = ToolParam.string("style", "Comping style: quarter_stabs, on_beat, eighth_pump, shell_voicings, charleston (default: quarter_stabs)")
+            .values(List.of("quarter_stabs", "on_beat", "eighth_pump", "shell_voicings", "charleston"))
+            .optional();
+        final var bars = ToolParam.integer("bars", "Number of bars (default: use all defined chords)")
+            .min(1)
+            .optional();
+        final var velocity = ToolParam.string("velocity", "Velocity/dynamics: ppp, pp, p, mp, mf (default), f, ff, fff")
+            .values(DYNAMICS)
+            .optional();
+        return MusicToolDef.of(provider, "harmony.comp",
             "Generate a comping (chord accompaniment) voice over bar-level chord changes. " +
                 "Styles: " +
                 "'quarter_stabs' — block chord on beats 2 and 4 (default, jazz comping); " +
@@ -577,312 +652,364 @@ public final class MusicMcpTools {
                 "'shell_voicings' — root + 7th on beats 2 and 4 (sparse jazz voicing); " +
                 "'charleston' — dotted quarter + eighth + quarter + rest (classic jazz Charleston rhythm). " +
                 "Requires harmony.set_bars (preferred) or harmony.set_key + harmony.chord_progression. " +
-                "Example: set_bars → comp style='charleston' octave=3 → assign to piano.",
-            buildObjectSchema(
-                Map.of(
-                    "target_voice", strProp("Name for the comping voice (default: 'comp')"),
-                    "octave", intProp("Voicing octave (default: 3 — mid-range)"),
-                    "style", strProp("Comping style: quarter_stabs, on_beat, eighth_pump, shell_voicings, charleston (default: quarter_stabs)"),
-                    "bars", intProp("Number of bars (default: use all defined chords)"),
-                    "velocity", strProp("Velocity/dynamics: ppp, pp, p, mp, mf (default), f, ff, fff")
-                ),
-                List.of()),
-            (ctx, args) -> HarmonyTools.comp(ctx, optStr(args, "target_voice"),
-                has(args, "octave") ? args.get("octave").asNumber().toNumber().intValue() : 3,
-                optStr(args, "style"),
-                has(args, "bars") ? args.get("bars").asNumber().toNumber().intValue() : null,
-                optStr(args, "velocity")));
+                "Example: set_bars → comp style='charleston' octave=3 → assign to piano.")
+            .param(targetVoice)
+            .param(octave)
+            .param(style)
+            .param(bars)
+            .param(velocity)
+            .handle((ctx, args) -> HarmonyTools.comp(ctx, targetVoice.extract(args), octave.extract(args),
+                style.extract(args), bars.extract(args), velocity.extract(args)));
     }
 
     private static McpTool voiceSetDynamicsTool(final CompositionContextProvider provider) {
-        return tool(provider,
+        final var voice = ToolParam.string("voice", "Name of the voice to set dynamics for")
+            .minLength(1);
+        final var dynamics = ToolParam.string("dynamics", "Dynamics level: ppp, pp, p, mp, mf, f, ff, fff")
+            .values(DYNAMICS);
+        return MusicToolDef.of(provider,
             "voice.set_dynamics",
             "Set the dynamics (volume) for a voice. " +
                 "Applies to all notes in the voice when rendering to MIDI. " +
                 "Example: set 'bass' to forte for a driving bass line, 'pad' to piano for background chords. " +
-                "Dynamics values: ppp, pp, p, mp, mf (default), f, ff, fff.",
-            McpTools.schema(
-                Map.of(
-                    "voice", "Name of the voice to set dynamics for",
-                    "dynamics", "Dynamics level: ppp, pp, p, mp, mf, f, ff, fff"
-                ),
-                List.of("voice", "dynamics")),
-            (ctx, args) -> VoiceTools.setDynamics(ctx, str(args, "voice"), str(args, "dynamics"))
-        );
+                "Dynamics values: ppp, pp, p, mp, mf (default), f, ff, fff.")
+            .param(voice)
+            .param(dynamics)
+            .handle((ctx, args) -> VoiceTools.setDynamics(ctx, voice.extract(args), dynamics.extract(args)));
     }
 
     private static McpTool voiceSetArticulationTool(final CompositionContextProvider provider) {
-        return tool(provider,
+        final var voice = ToolParam.string("voice", "Name of the voice to set articulation for")
+            .minLength(1);
+        final var articulation = ToolParam.string("articulation", "Articulation: normal, staccato, accent, tenuto, marcato, legato, portato")
+            .values(List.of("normal", "staccato", "accent", "tenuto", "marcato", "legato", "portato"));
+        final var fromBar = ToolParam.integer("from_bar", "First bar of the range (1-based, optional)")
+            .min(1)
+            .optional();
+        final var toBar = ToolParam.integer("to_bar", "Last bar of the range (inclusive, optional)")
+            .min(1)
+            .optional();
+        return MusicToolDef.of(provider,
             "voice.set_articulation",
             "Set articulation for a voice, optionally scoped to a bar range. " +
                 "Without from_bar/to_bar, applies to the whole voice. " +
                 "With from_bar/to_bar, only those bars are affected — e.g. make just the final phrase tenuto. " +
                 "Affects both MIDI playback (note duration) and LilyPond notation marks. " +
-                "Articulations: normal (default), staccato, accent, tenuto, marcato, legato, portato.",
-            buildObjectSchema(
-                Map.of(
-                    "voice", strProp("Name of the voice to set articulation for"),
-                    "articulation", strProp("Articulation: normal, staccato, accent, tenuto, marcato, legato, portato"),
-                    "from_bar", intProp("First bar of the range (1-based, optional)"),
-                    "to_bar", intProp("Last bar of the range (inclusive, optional)")
-                ),
-                List.of("voice", "articulation")),
-            (ctx, args) -> VoiceTools.setArticulation(ctx, str(args, "voice"), str(args, "articulation"),
-                has(args, "from_bar") ? args.get("from_bar").asNumber().toNumber().intValue() : null,
-                has(args, "to_bar") ? args.get("to_bar").asNumber().toNumber().intValue() : null)
-        );
+                "Articulations: normal (default), staccato, accent, tenuto, marcato, legato, portato.")
+            .param(voice)
+            .param(articulation)
+            .param(fromBar)
+            .param(toBar)
+            .handle((ctx, args) -> VoiceTools.setArticulation(ctx, voice.extract(args), articulation.extract(args),
+                fromBar.extract(args), toBar.extract(args)));
     }
 
     private static McpTool voiceAddExpressionCurveTool(final CompositionContextProvider provider) {
-        return tool(provider,
+        final var voice = ToolParam.string("voice", "Name of the voice")
+            .minLength(1);
+        final var startBar = ToolParam.integer("start_bar", "First bar of the curve (1-based)")
+            .min(1);
+        final var endBar = ToolParam.integer("end_bar", "Last bar of the curve (inclusive)")
+            .min(1);
+        final var fromValue = ToolParam.integer("from_value", "CC 11 value at start_bar (0–127)")
+            .min(0).max(127);
+        final var toValue = ToolParam.integer("to_value", "CC 11 value at end_bar (0–127)")
+            .min(0).max(127);
+        final var curve = ToolParam.string("curve", "Shape: 'linear' or 'exponential'")
+            .values(CURVE);
+        return MusicToolDef.of(provider,
             "voice.add_expression_curve",
             "Add a gradual CC 11 (expression) curve to a voice. " +
                 "The renderer interpolates CC 11 events at each bar boundary between startBar and endBar. " +
                 "Values are MIDI CC range 0–127 (0=silent, 127=full). " +
                 "curve: 'linear' for equal steps, 'exponential' for a more natural swell. " +
-                "Example: crescendo 'melody' from pp (30) to ff (110) over bars 9–16.",
-            buildObjectSchema(
-                Map.of(
-                    "voice", strProp("Name of the voice"),
-                    "start_bar", intProp("First bar of the curve (1-based)"),
-                    "end_bar", intProp("Last bar of the curve (inclusive)"),
-                    "from_value", intProp("CC 11 value at start_bar (0–127)"),
-                    "to_value", intProp("CC 11 value at end_bar (0–127)"),
-                    "curve", strProp("Shape: 'linear' or 'exponential'")
-                ),
-                List.of("voice", "start_bar", "end_bar", "from_value", "to_value", "curve")),
-            (ctx, args) -> VoiceTools.addExpressionCurve(
-                ctx,
-                str(args, "voice"),
-                args.get("start_bar").asNumber().toNumber().intValue(),
-                args.get("end_bar").asNumber().toNumber().intValue(),
-                args.get("from_value").asNumber().toNumber().intValue(),
-                args.get("to_value").asNumber().toNumber().intValue(),
-                str(args, "curve"))
-        );
+                "Example: crescendo 'melody' from pp (30) to ff (110) over bars 9–16.")
+            .param(voice)
+            .param(startBar)
+            .param(endBar)
+            .param(fromValue)
+            .param(toValue)
+            .param(curve)
+            .handle((ctx, args) -> VoiceTools.addExpressionCurve(ctx,
+                voice.extract(args), startBar.extract(args), endBar.extract(args),
+                fromValue.extract(args), toValue.extract(args), curve.extract(args)));
     }
 
     private static McpTool voiceConcatTool(final CompositionContextProvider provider) {
-        return tool(provider, "voice.concat",
+        final var voiceNames = ToolParam.string("voice_names", "Comma-separated voice names, e.g. 'verse1, chorus, verse2'")
+            .minLength(1);
+        final var targetVoice = ToolParam.string("target_voice", "Name for the resulting concatenated voice")
+            .minLength(1);
+        return MusicToolDef.of(provider, "voice.concat",
             "Concatenate multiple voices into a single voice sequentially. " +
                 "Voice B starts exactly where voice A ends — essential for ABA form, verse-chorus, etc. " +
                 "voice_names: comma-separated list of voice names in order. " +
-                "Example: concat 'verse1, chorus, verse2, chorus' into 'full_melody'.",
-            buildObjectSchema(
-                Map.of("voice_names", strProp("Comma-separated voice names, e.g. 'verse1, chorus, verse2'"),
-                    "target_voice", strProp("Name for the resulting concatenated voice")),
-                List.of("voice_names", "target_voice")),
-            (ctx, args) -> VoiceOpTools.concat(ctx, str(args, "voice_names"), str(args, "target_voice")));
+                "Example: concat 'verse1, chorus, verse2, chorus' into 'full_melody'.")
+            .param(voiceNames)
+            .param(targetVoice)
+            .handle((ctx, args) -> VoiceOpTools.concat(ctx, voiceNames.extract(args), targetVoice.extract(args)));
     }
 
     private static McpTool voiceRepeatTool(final CompositionContextProvider provider) {
-        return tool(provider, "voice.repeat",
+        final var voice = ToolParam.string("voice", "Voice to repeat")
+            .minLength(1);
+        final var times = ToolParam.integer("times", "Number of repetitions (>= 1)")
+            .min(1);
+        final var targetVoice = ToolParam.string("target_voice", "Name for the repeated voice (optional)")
+            .minLength(1)
+            .optional();
+        return MusicToolDef.of(provider, "voice.repeat",
             "Repeat a voice N times, creating a new concatenated voice. " +
                 "Useful for ostinatos, repeated motifs, and riff-based composition. " +
-                "Example: create a 1-bar bass riff, then voice.repeat it 8 times for an 8-bar groove.",
-            buildObjectSchema(
-                Map.of("voice", strProp("Voice to repeat"),
-                    "times", intProp("Number of repetitions (>= 1)"),
-                    "target_voice", strProp("Name for the repeated voice (optional)")),
-                List.of("voice", "times")),
-            (ctx, args) -> VoiceOpTools.repeat(ctx, str(args, "voice"),
-                args.get("times").asNumber().toNumber().intValue(), optStr(args, "target_voice")));
+                "Example: create a 1-bar bass riff, then voice.repeat it 8 times for an 8-bar groove.")
+            .param(voice)
+            .param(times)
+            .param(targetVoice)
+            .handle((ctx, args) -> VoiceOpTools.repeat(ctx, voice.extract(args), times.extract(args), targetVoice.extract(args)));
     }
 
     private static McpTool voiceSliceTool(final CompositionContextProvider provider) {
-        return tool(provider, "voice.slice",
+        final var voice = ToolParam.string("voice", "Voice to slice")
+            .minLength(1);
+        final var startMeasure = ToolParam.integer("start_measure", "First measure to include (1-based)")
+            .min(1);
+        final var endMeasure = ToolParam.integer("end_measure", "Measure to stop before (exclusive, >= 2)")
+            .min(2);
+        final var targetVoice = ToolParam.string("target_voice", "Name for the sliced voice (optional)")
+            .minLength(1)
+            .optional();
+        return MusicToolDef.of(provider, "voice.slice",
             "Advanced: Extract a range of measures from a voice. " +
                 "start_measure and end_measure are 1-based; end_measure is exclusive. " +
                 "E.g., start=1, end=3 extracts measures 1 and 2. " +
-                "For most form-building use cases, prefer form.create_section and form.repeat_section.",
-            buildObjectSchema(
-                Map.of("voice", strProp("Voice to slice"),
-                    "start_measure", intProp("First measure to include (1-based)"),
-                    "end_measure", intProp("Measure to stop before (exclusive)"),
-                    "target_voice", strProp("Name for the sliced voice (optional)")),
-                List.of("voice", "start_measure", "end_measure")),
-            (ctx, args) -> VoiceOpTools.sliceMeasures(ctx, str(args, "voice"),
-                args.get("start_measure").asNumber().toNumber().intValue(), args.get("end_measure").asNumber().toNumber().intValue(),
-                optStr(args, "target_voice")));
+                "For most form-building use cases, prefer form.create_section and form.repeat_section.")
+            .param(voice)
+            .param(startMeasure)
+            .param(endMeasure)
+            .param(targetVoice)
+            .handle((ctx, args) -> VoiceOpTools.sliceMeasures(ctx, voice.extract(args),
+                startMeasure.extract(args), endMeasure.extract(args), targetVoice.extract(args)));
     }
 
     private static McpTool voicePadToMeasureTool(final CompositionContextProvider provider) {
-        return tool(provider, "voice.pad_to_measure",
+        final var voice = ToolParam.string("voice", "Voice to pad")
+            .minLength(1);
+        final var startMeasure = ToolParam.integer("start_measure", "Measure number where the voice should begin (1-based)")
+            .min(1);
+        final var targetVoice = ToolParam.string("target_voice", "Name for the padded voice (optional, replaces original if omitted)")
+            .minLength(1)
+            .optional();
+        return MusicToolDef.of(provider, "voice.pad_to_measure",
             "Advanced: Add leading rests to a voice so it starts at a given measure. " +
                 "start_measure=3 prepends 2 measures of rests before the voice. " +
                 "Replaces the need for manual 'r/w r/w' padding. " +
-                "For most use cases, prefer form.create_section which handles alignment automatically.",
-            buildObjectSchema(
-                Map.of("voice", strProp("Voice to pad"),
-                    "start_measure", intProp("Measure number where the voice should begin (1-based)"),
-                    "target_voice", strProp("Name for the padded voice (optional, replaces original if omitted)")),
-                List.of("voice", "start_measure")),
-            (ctx, args) -> VoiceOpTools.padToMeasure(ctx, str(args, "voice"),
-                args.get("start_measure").asNumber().toNumber().intValue(), optStr(args, "target_voice")));
+                "For most use cases, prefer form.create_section which handles alignment automatically.")
+            .param(voice)
+            .param(startMeasure)
+            .param(targetVoice)
+            .handle((ctx, args) -> VoiceOpTools.padToMeasure(ctx, voice.extract(args),
+                startMeasure.extract(args), targetVoice.extract(args)));
     }
 
     private static McpTool voiceTrimTool(final CompositionContextProvider provider) {
-        return tool(provider, "voice.trim",
-            "Truncate a voice to N bars, discarding everything after. Writes back in place.",
-            buildObjectSchema(
-                Map.of("voice", strProp("Name of the voice to trim"), "bars", intProp("Number of bars to keep")),
-                List.of("voice", "bars")),
-            (ctx, args) -> VoiceOpTools.trimVoice(ctx, str(args, "voice"), args.get("bars").asNumber().toNumber().intValue()));
+        final var voice = ToolParam.string("voice", "Name of the voice to trim")
+            .minLength(1);
+        final var bars = ToolParam.integer("bars", "Number of bars to keep (>= 1)")
+            .min(1);
+        return MusicToolDef.of(provider, "voice.trim",
+            "Truncate a voice to N bars, discarding everything after. Writes back in place.")
+            .param(voice)
+            .param(bars)
+            .handle((ctx, args) -> VoiceOpTools.trimVoice(ctx, voice.extract(args), bars.extract(args)));
     }
 
     private static McpTool voiceSetBarTool(final CompositionContextProvider provider) {
-        return tool(provider, "voice.set_bar",
+        final var voice = ToolParam.string("voice", "Voice name")
+            .minLength(1);
+        final var bar = ToolParam.integer("bar", "Bar number to replace (1-based)")
+            .min(1);
+        final var notes = ToolParam.string("notes", "New note sequence for the bar, e.g. 'C4/q D4/q E4/q F4/q'")
+            .minLength(1);
+        return MusicToolDef.of(provider, "voice.set_bar",
             "Replace a single bar's content with new notes. " +
                 "Uses the same note syntax as voice.create. " +
-                "Useful for fixing a wrong bar without recreating the whole voice.",
-            buildObjectSchema(
-                Map.of("voice", strProp("Voice name"),
-                    "bar", intProp("Bar number to replace (1-based)"),
-                    "notes", strProp("New note sequence for the bar, e.g. 'C4/q D4/q E4/q F4/q'")),
-                List.of("voice", "bar", "notes")),
-            (ctx, args) -> VoiceOpTools.setBar(ctx, str(args, "voice"), args.get("bar").asNumber().toNumber().intValue(), str(args, "notes")));
+                "Useful for fixing a wrong bar without recreating the whole voice.")
+            .param(voice)
+            .param(bar)
+            .param(notes)
+            .handle((ctx, args) -> VoiceOpTools.setBar(ctx, voice.extract(args), bar.extract(args), notes.extract(args)));
     }
 
     private static McpTool voiceReplaceRangeTool(final CompositionContextProvider provider) {
-        return tool(provider, "voice.replace_range",
+        final var voice = ToolParam.string("voice", "Voice name")
+            .minLength(1);
+        final var fromBar = ToolParam.integer("from_bar", "First bar to replace (1-based, inclusive)")
+            .min(1);
+        final var toBar = ToolParam.integer("to_bar", "Last bar to replace (1-based, inclusive)")
+            .min(1);
+        final var notes = ToolParam.string("notes", "Replacement note sequence")
+            .minLength(1);
+        return MusicToolDef.of(provider, "voice.replace_range",
             "Replace a range of bars with new notes. " +
                 "from_bar and to_bar are both inclusive. " +
-                "The new notes replace the entire span — they don't have to fill the same number of bars.",
-            buildObjectSchema(
-                Map.of("voice", strProp("Voice name"),
-                    "from_bar", intProp("First bar to replace (1-based, inclusive)"),
-                    "to_bar", intProp("Last bar to replace (1-based, inclusive)"),
-                    "notes", strProp("Replacement note sequence")),
-                List.of("voice", "from_bar", "to_bar", "notes")),
-            (ctx, args) -> VoiceOpTools.replaceRange(ctx, str(args, "voice"),
-                args.get("from_bar").asNumber().toNumber().intValue(), args.get("to_bar").asNumber().toNumber().intValue(), str(args, "notes")));
+                "The new notes replace the entire span — they don't have to fill the same number of bars.")
+            .param(voice)
+            .param(fromBar)
+            .param(toBar)
+            .param(notes)
+            .handle((ctx, args) -> VoiceOpTools.replaceRange(ctx, voice.extract(args),
+                fromBar.extract(args), toBar.extract(args), notes.extract(args)));
     }
 
     private static McpTool voiceReplaceNoteTool(final CompositionContextProvider provider) {
-        return tool(provider, "voice.replace_note",
+        final var voice = ToolParam.string("voice", "Voice name")
+            .minLength(1);
+        final var bar = ToolParam.integer("bar", "Bar number (1-based)")
+            .min(1);
+        final var old = ToolParam.string("old", "Note to find by pitch, e.g. 'C4/q'")
+            .minLength(1);
+        final var neu = ToolParam.string("new", "Replacement note(s), e.g. 'D4/q'")
+            .minLength(1);
+        return MusicToolDef.of(provider, "voice.replace_note",
             "Surgically replace a single note in a bar. " +
                 "Finds the first note in the given bar whose pitch matches 'old', replaces it with 'new'. " +
                 "old and new are full note tokens including duration, e.g. 'C4/q' or 'F#4/e'. " +
-                "Use query.voice to inspect bar content before calling this.",
-            buildObjectSchema(
-                Map.of("voice", strProp("Voice name"),
-                    "bar", intProp("Bar number (1-based)"),
-                    "old", strProp("Note to find by pitch, e.g. 'C4/q'"),
-                    "new", strProp("Replacement note(s), e.g. 'D4/q'")),
-                List.of("voice", "bar", "old", "new")),
-            (ctx, args) -> VoiceOpTools.replaceNote(ctx, str(args, "voice"),
-                args.get("bar").asNumber().toNumber().intValue(), str(args, "old"), str(args, "new")));
+                "Use query.voice to inspect bar content before calling this.")
+            .param(voice)
+            .param(bar)
+            .param(old)
+            .param(neu)
+            .handle((ctx, args) -> VoiceOpTools.replaceNote(ctx, voice.extract(args),
+                bar.extract(args), old.extract(args), neu.extract(args)));
     }
 
     private static McpTool voiceMeasureCountTool(final CompositionContextProvider provider) {
-        return tool(provider, "voice.measure_count",
+        final var voice = ToolParam.string("voice", "Voice name")
+            .minLength(1);
+        return MusicToolDef.of(provider, "voice.measure_count",
             "Return the number of complete bars in a voice. " +
-                "Also shown in voice.list — use this when you only need the count for one voice.",
-            McpTools.schema(
-                Map.of("voice", "Voice name"),
-                List.of("voice")),
-            (ctx, args) -> VoiceOpTools.measureCount(ctx, str(args, "voice")));
+                "Also shown in voice.list — use this when you only need the count for one voice.")
+            .param(voice)
+            .annotations(READ_ONLY)
+            .handle((ctx, args) -> VoiceOpTools.measureCount(ctx, voice.extract(args)));
     }
 
     private static McpTool formCreateSectionTool(final CompositionContextProvider provider) {
-        return tool(provider, "form.create_section",
+        final var name = ToolParam.string("name", "Section name, e.g. 'A', 'B', 'Verse', 'Chorus'")
+            .minLength(1);
+        final var measures = ToolParam.integer("measures", "How many measures this section spans (optional — inferred from voices if omitted)")
+            .min(1)
+            .optional();
+        final var voiceNames = ToolParam.string("voice_names", "Comma-separated voice names (optional, defaults to all)")
+            .minLength(1)
+            .optional();
+        return MusicToolDef.of(provider, "form.create_section",
             "Create a named section from the current voices (or specified voices). " +
                 "Sections are the building blocks of formal plans: A, B, Verse, Chorus, etc. " +
                 "measures is optional — if omitted, inferred from the longest provided voice. " +
                 "Explicit measures overrides inference; a warning is returned if they disagree. " +
-                "voice_names: optional comma-separated list; uses all voices if omitted.",
-            buildObjectSchema(
-                Map.of("name", strProp("Section name, e.g. 'A', 'B', 'Verse', 'Chorus'"),
-                    "measures", intProp("How many measures this section spans (optional — inferred from voices if omitted)"),
-                    "voice_names", strProp("Comma-separated voice names (optional, defaults to all)")),
-                List.of("name")),
-            (ctx, args) -> FormTools.createSection(ctx, str(args, "name"),
-                optStr(args, "voice_names"), optInt(args, "measures")));
+                "voice_names: optional comma-separated list; uses all voices if omitted.")
+            .param(name)
+            .param(measures)
+            .param(voiceNames)
+            .handle((ctx, args) -> FormTools.createSection(ctx, name.extract(args),
+                voiceNames.extract(args), measures.extract(args)));
     }
 
     private static McpTool formRepeatSectionTool(final CompositionContextProvider provider) {
-        return tool(provider, "form.repeat_section",
+        final var section = ToolParam.string("section", "Name of section to repeat (must exist)")
+            .minLength(1);
+        final var newLabel = ToolParam.string("new_label", "Optional display label for this occurrence")
+            .minLength(1)
+            .optional();
+        return MusicToolDef.of(provider, "form.repeat_section",
             "Repeat a previously defined section in the formal plan. " +
                 "Creates ABA, AABA, rondo forms, etc. " +
-                "new_label: optional display label (e.g. 'A\\'' for the return of A).",
-            buildObjectSchema(
-                Map.of("section", strProp("Name of section to repeat (must exist)"),
-                    "new_label", strProp("Optional display label for this occurrence")),
-                List.of("section")),
-            (ctx, args) -> FormTools.repeatSection(ctx, str(args, "section"), optStr(args, "new_label")));
+                "new_label: optional display label (e.g. 'A\\'' for the return of A).")
+            .param(section)
+            .param(newLabel)
+            .handle((ctx, args) -> FormTools.repeatSection(ctx, section.extract(args), newLabel.extract(args)));
     }
 
     private static McpTool formSetEndingTool(final CompositionContextProvider provider) {
-        return tool(provider, "form.set_ending",
+        final var section = ToolParam.string("section", "Section to attach the ending to")
+            .minLength(1);
+        final var pass = ToolParam.integer("pass", "Which repetition this ending plays on (1-based)")
+            .min(1);
+        final var endingSection = ToolParam.string("ending_section", "Name of a previously created section providing the ending bars")
+            .minLength(1);
+        return MusicToolDef.of(provider, "form.set_ending",
             "Register a per-pass ending for a section — standard 1st/2nd ending volta brackets. " +
                 "Create the ending bars as a separate section first (e.g. 'A_end_1', 'A_end_2'), " +
                 "then call form.set_ending to attach them. " +
                 "The ending section's measure count determines how many tail bars are replaced. " +
                 "Example: 8-bar section A with 1-bar endings → bar 8 differs between pass 1 and pass 2. " +
-                "form.build will render \\repeat volta brackets in LilyPond and correct MIDI per pass.",
-            buildObjectSchema(
-                Map.of(
-                    "section", strProp("Section to attach the ending to"),
-                    "pass", intProp("Which repetition this ending plays on (1-based)"),
-                    "ending_section", strProp("Name of a previously created section providing the ending bars")
-                ),
-                List.of("section", "pass", "ending_section")),
-            (ctx, args) -> FormTools.setEnding(ctx, str(args, "section"),
-                args.get("pass").asNumber().toNumber().intValue(), str(args, "ending_section")));
+                "form.build will render \\repeat volta brackets in LilyPond and correct MIDI per pass.")
+            .param(section)
+            .param(pass)
+            .param(endingSection)
+            .handle((ctx, args) -> FormTools.setEnding(ctx, section.extract(args),
+                pass.extract(args), endingSection.extract(args)));
     }
 
     private static McpTool formBuildTool(final CompositionContextProvider provider) {
-        return tool(provider, "form.build",
+        return MusicToolDef.of(provider, "form.build",
             "Assemble the score from the formal plan. " +
                 "Concatenates sections in order, filling missing voices with rests. " +
-                "Creates assembled voices in the composition context.",
-            emptySchema(),
-            (ctx, args) -> FormTools.buildScore(ctx));
+                "Creates assembled voices in the composition context.")
+            .handle((ctx, args) -> FormTools.buildScore(ctx));
     }
 
     private static McpTool formDescribeTool(final CompositionContextProvider provider) {
-        return tool(provider, "form.describe",
-            "Show the current formal plan structure and section count.",
-            emptySchema(),
-            (ctx, args) -> FormTools.describeForm(ctx));
+        return MusicToolDef.of(provider, "form.describe",
+            "Show the current formal plan structure and section count.")
+            .annotations(READ_ONLY)
+            .handle((ctx, args) -> FormTools.describeForm(ctx));
     }
 
     private static McpTool rulesCheckTool(final CompositionContextProvider provider) {
-        return tool(provider, "rules.check",
+        return MusicToolDef.of(provider, "rules.check",
             "Run composition rules against all voices and report any violations. " +
                 "Checks voice leading (large leaps, repetition) and meter consistency. " +
-                "Violations are advisory — they do not prevent composition.",
-            emptySchema(),
-            (ctx, args) -> RulesTools.check(ctx));
+                "Violations are advisory — they do not prevent composition.")
+            .annotations(READ_ONLY)
+            .handle((ctx, args) -> RulesTools.check(ctx));
     }
 
     private static McpTool rulesCheckRangeTool(final CompositionContextProvider provider) {
-        return tool(provider, "rules.check_range",
+        final var voice = ToolParam.string("voice", "Voice to check")
+            .minLength(1);
+        final var instrument = ToolParam.string("instrument", "Instrument name, e.g. 'Flute', 'Violin'")
+            .minLength(1);
+        return MusicToolDef.of(provider, "rules.check_range",
             "Check whether a voice fits within an instrument's written range. " +
                 "Reports notes that are too high, too low, or in extreme registers. " +
-                "Instrument names: Piano, Flute, Violin, Cello, Trumpet, French Horn, Clarinet, etc.",
-            buildObjectSchema(
-                Map.of("voice", strProp("Voice to check"),
-                    "instrument", strProp("Instrument name, e.g. 'Flute', 'Violin'")),
-                List.of("voice", "instrument")),
-            (ctx, args) -> RulesTools.checkRange(ctx, str(args, "voice"), str(args, "instrument")));
+                "Instrument names: Piano, Flute, Violin, Cello, Trumpet, French Horn, Clarinet, etc.")
+            .param(voice)
+            .param(instrument)
+            .annotations(READ_ONLY)
+            .handle((ctx, args) -> RulesTools.checkRange(ctx, voice.extract(args), instrument.extract(args)));
     }
 
     private static McpTool instrumentInfoTool() {
-        return toolNoCtx(
+        final var instrument = ToolParam.string("instrument", "Instrument name, e.g. 'Flute', 'Violin', 'Piano'")
+            .minLength(1);
+        return MusicToolDef.ofNoCtx(
             "instrument.info",
             "Get information about an instrument: range, family, MIDI program, clef. " +
                 "Instrument names: Piano, Flute, Oboe, Clarinet, Bassoon, Trumpet, French Horn, " +
-                "Trombone, Tuba, Violin, Viola, Cello, Double Bass, Harp, Organ, etc.",
-            McpTools.schema(
-                Map.of("instrument", "Instrument name, e.g. 'Flute', 'Violin', 'Piano'"),
-                List.of("instrument")),
-            args -> InstrumentTools.info(str(args, "instrument"))
-        );
+                "Trombone, Tuba, Violin, Viola, Cello, Double Bass, Harp, Organ, etc.")
+            .param(instrument)
+            .annotations(READ_ONLY)
+            .handle(args -> InstrumentTools.info(instrument.extract(args)));
     }
 
     private static McpTool drumsPresetTool(final CompositionContextProvider provider) {
-        return tool(provider, "drums.preset",
+        final var preset = ToolParam.string("preset", "Preset name: house_4on4, rock_8th, rock_basic, bossa_nova, waltz, waltz_jazz, swing, afrohouse")
+            .values(List.of("house_4on4", "rock_8th", "rock_basic", "bossa_nova", "waltz", "waltz_jazz", "swing", "afrohouse"));
+        final var bars = ToolParam.integer("bars", "Number of bars to generate (1–64)")
+            .min(1).max(64);
+        return MusicToolDef.of(provider, "drums.preset",
             "Load a drum preset pattern for the specified number of bars. " +
                 "Creates multiple voices (drums_kick, drums_snare, drums_hihat, etc.) assigned to MIDI channel 9 (GM percussion). " +
                 "Example: drums.preset house_4on4 for 8 bars gives a four-on-the-floor dance pattern. " +
@@ -894,89 +1021,95 @@ public final class MusicMcpTools {
                 "waltz (3/4 kick on 1, snare on 2&3), " +
                 "waltz_jazz (3/4 kick+hihat on 1, brushed snare on 2&3), " +
                 "swing (ride swing eighths, half-note kick, foot hi-hat on 2&4), " +
-                "afrohouse (syncopated kick on 1/and-of-2/3, open hi-hat accents, conga layer, maracas eighths).",
-            buildObjectSchema(
-                Map.of(
-                    "preset", strProp("Preset name: house_4on4, rock_8th, rock_basic, bossa_nova, waltz, waltz_jazz, swing, afrohouse"),
-                    "bars", intProp("Number of bars to generate (1-64)")
-                ),
-                List.of("preset", "bars")),
-            (ctx, args) -> DrumPresets.loadPreset(ctx, str(args, "preset"), args.get("bars").asNumber().toNumber().intValue()));
+                "afrohouse (syncopated kick on 1/and-of-2/3, open hi-hat accents, conga layer, maracas eighths).")
+            .param(preset)
+            .param(bars)
+            .handle((ctx, args) -> DrumPresets.loadPreset(ctx, preset.extract(args), bars.extract(args)));
     }
 
     private static McpTool scoreSetSwingTool(final CompositionContextProvider provider) {
-        return tool(provider, "score.set_swing",
+        final var ratio = ToolParam.string("ratio", "Swing ratio between 0.5 and 1.0 — e.g. '2/3' (standard), '3/5' (light), '0' to disable")
+            .minLength(1);
+        return MusicToolDef.of(provider, "score.set_swing",
             "Enable swing quantization for MIDI playback. " +
                 "Swing delays off-beat eighth notes to create the jazz/funk/blues lilt. " +
                 "Standard jazz swing: ratio=2/3 (long-short 2:1). Light shuffle: 3/5. " +
                 "Only affects eighth notes; quarter notes, dotted values, and triplets are unchanged. " +
                 "Set ratio to '0' to disable swing and return to straight timing. " +
-                "Example: score.set_swing 2/3 → jazz standard swing feel.",
-            McpTools.schema(
-                Map.of("ratio", "Swing ratio between 0.5 and 1.0 — e.g. '2/3' (standard), '3/5' (light), '0' to disable"),
-                List.of("ratio")),
-            (ctx, args) -> ScoreTools.setSwing(ctx, str(args, "ratio")));
+                "Example: score.set_swing 2/3 → jazz standard swing feel.")
+            .param(ratio)
+            .annotations(IDEMPOTENT)
+            .handle((ctx, args) -> ScoreTools.setSwing(ctx, ratio.extract(args)));
     }
 
     private static McpTool scoreSetTempoChangeTool(final CompositionContextProvider provider) {
-        return tool(provider, "score.set_tempo_change",
+        final var startBar = ToolParam.integer("start_bar", "First bar of the tempo change (1-based)")
+            .min(1);
+        final var endBar = ToolParam.integer("end_bar", "Last bar — target tempo reached here")
+            .min(1);
+        final var toBpm = ToolParam.integer("to_bpm", "Target BPM at end_bar (1–400)")
+            .min(1).max(400);
+        final var curve = ToolParam.string("curve", "Interpolation curve: 'linear' (default) or 'exponential'")
+            .values(CURVE)
+            .optional();
+        return MusicToolDef.of(provider, "score.set_tempo_change",
             "Declare a gradual tempo change (ritardando or accelerando) across a bar span. " +
                 "The change starts at start_bar and reaches to_bpm by end_bar. " +
                 "Affects both MIDI playback (interpolated tempo events per bar) and LilyPond notation (rit./accel. mark). " +
                 "curve: 'linear' = equal BPM steps; 'exponential' = change accelerates toward end (more natural for rit.). " +
-                "Example: start_bar=22 end_bar=24 to_bpm=60 curve=exponential for a 3-bar ritardando.",
-            buildObjectSchema(
-                Map.of(
-                    "start_bar", intProp("First bar of the tempo change (1-based)"),
-                    "end_bar", intProp("Last bar — target tempo reached here"),
-                    "to_bpm", intProp("Target BPM at end_bar"),
-                    "curve", strProp("Interpolation curve: 'linear' (default) or 'exponential'")
-                ),
-                List.of("start_bar", "end_bar", "to_bpm")),
-            (ctx, args) -> ScoreTools.setTempoChange(ctx,
-                args.get("start_bar").asNumber().toNumber().intValue(), args.get("end_bar").asNumber().toNumber().intValue(),
-                args.get("to_bpm").asNumber().toNumber().intValue(), optStr(args, "curve")));
+                "Example: start_bar=22 end_bar=24 to_bpm=60 curve=exponential for a 3-bar ritardando.")
+            .param(startBar)
+            .param(endBar)
+            .param(toBpm)
+            .param(curve)
+            .handle((ctx, args) -> ScoreTools.setTempoChange(ctx,
+                startBar.extract(args), endBar.extract(args), toBpm.extract(args), curve.extract(args)));
     }
 
     private static McpTool scoreSaveTool(final CompositionContextProvider provider) {
-        return tool(provider, "score.save",
+        final var filename = ToolParam.string("filename", "Filename (without path) to save, e.g. 'my_song' or 'my_song.json'")
+            .minLength(1);
+        return MusicToolDef.of(provider, "score.save",
             "Save the current composition to a JSON snapshot file under generated_tracks/. " +
                 "The snapshot captures all voices, motifs, metadata, key, swing, bar chords, and tempo changes. " +
                 "Use score.load to restore the session later. " +
-                "Example: score.save filename='my_song' — writes generated_tracks/my_song.json",
-            buildObjectSchema(
-                Map.of("filename", strProp("Filename (without path) to save, e.g. 'my_song' or 'my_song.json'")),
-                List.of("filename")),
-            (ctx, args) -> SaveLoadTools.save(ctx, str(args, "filename")));
+                "Example: score.save filename='my_song' — writes generated_tracks/my_song.json")
+            .param(filename)
+            .annotations(OPEN_WORLD)
+            .handle((ctx, args) -> SaveLoadTools.save(ctx, filename.extract(args)));
     }
 
     private static McpTool scoreLoadTool(final CompositionContextProvider provider) {
-        return tool(provider, "score.load",
+        final var filename = ToolParam.string("filename", "Filename (without path) to load, e.g. 'my_song' or 'my_song.json'")
+            .minLength(1);
+        return MusicToolDef.of(provider, "score.load",
             "Load a composition from a JSON snapshot file under generated_tracks/. " +
                 "Replaces all current state with the saved session. " +
-                "Example: score.load filename='my_song' — reads generated_tracks/my_song.json",
-            buildObjectSchema(
-                Map.of("filename", strProp("Filename (without path) to load, e.g. 'my_song' or 'my_song.json'")),
-                List.of("filename")),
-            (ctx, args) -> SaveLoadTools.load(ctx, str(args, "filename")));
+                "Example: score.load filename='my_song' — reads generated_tracks/my_song.json")
+            .param(filename)
+            .annotations(OPEN_WORLD)
+            .handle((ctx, args) -> SaveLoadTools.load(ctx, filename.extract(args)));
     }
 
     private static McpTool scoreLoadMidiTool(final CompositionContextProvider provider) {
-        return tool(provider, "score.load_midi",
+        final var path = ToolParam.string("path", "Path to the MIDI file, e.g. 'generated_tracks/1_my_song/my_song.mid'")
+            .minLength(1);
+        return MusicToolDef.of(provider, "score.load_midi",
             "Import a MIDI file as voices into the current composition. " +
                 "Creates one voice per non-empty MIDI track, named 'voice-0', 'voice-1', etc. " +
                 "Also sets the tempo from the MIDI file. " +
                 "Existing voices are not cleared — call score.clear first if you want a fresh start. " +
                 "Note: MIDI loses enharmonic spelling; all black keys come back as sharps (C#, F#, etc.). " +
-                "path can be absolute or relative to the server's working directory.",
-            buildObjectSchema(
-                Map.of("path", strProp("Path to the MIDI file, e.g. 'generated_tracks/1_my_song/my_song.mid'")),
-                List.of("path")),
-            (ctx, args) -> SaveLoadTools.loadMidi(ctx, str(args, "path")));
+                "path can be absolute or relative to the server's working directory.")
+            .param(path)
+            .annotations(OPEN_WORLD)
+            .handle((ctx, args) -> SaveLoadTools.loadMidi(ctx, path.extract(args)));
     }
 
     private static McpTool scoreLoadAbcTool(final CompositionContextProvider provider) {
-        return tool(provider, "score.load_abc",
+        final var abc = ToolParam.string("abc", "Full ABC notation string, e.g. 'X:1\\nT:My Tune\\nL:1/8\\nK:G\\nGABc|...'")
+            .minLength(1);
+        return MusicToolDef.of(provider, "score.load_abc",
             "Parse an ABC notation string into a voice and add it to the current composition. " +
                 "ABC notation is a text format widely used for folk and traditional music " +
                 "(thesession.org, abcnotation.com have 400k+ tunes). " +
@@ -984,188 +1117,8 @@ public final class MusicMcpTools {
                 "octave markers (' raises, , lowers), length multipliers (A2, A/, A3/2), " +
                 "ties (-), bar lines, and repeats. " +
                 "Sets tempo from Q: if present. Voice is named after the T: title field. " +
-                "Existing voices are not cleared — call score.clear first if you want a fresh start.",
-            buildObjectSchema(
-                Map.of("abc", strProp("Full ABC notation string, e.g. 'X:1\\nT:My Tune\\nL:1/8\\nK:G\\nGABc|...'")),
-                List.of("abc")),
-            (ctx, args) -> SaveLoadTools.loadAbc(ctx, str(args, "abc")));
-    }
-
-    // --- Tool plumbing ---
-
-    @FunctionalInterface
-    private interface ContextToolHandler {
-        ToolResult handle(CompositionContext ctx, JsonValue args) throws Exception;
-    }
-
-    @FunctionalInterface
-    private interface NoContextToolHandler {
-        ToolResult handle(JsonValue args) throws Exception;
-    }
-
-    private static McpTool tool(final CompositionContextProvider provider,
-                                final String name,
-                                final String description,
-                                final JsonObject schema,
-                                final ContextToolHandler handler) {
-        return new McpTool() {
-            @Override
-            public String name() {
-                return name;
-            }
-
-            @Override
-            public String description() {
-                return description;
-            }
-
-            @Override
-            public JsonObject inputSchema() {
-                return schema;
-            }
-
-            @Override
-            public McpToolResult call(final JsonValue arguments) {
-                try {
-                    final JsonValue args = arguments != null ? arguments : JsonObject.builder().build();
-                    final CompositionContext ctx = provider.get();
-                    final ToolResult result = ScopedValue.where(MusicCodeModel.CURRENT, ctx.codeModel())
-                        .call(() -> handler.handle(ctx, args));
-                    return toMcpResult(result);
-                } catch (final IllegalArgumentException e) {
-                    return McpToolResult.error(e.getMessage());
-                } catch (final Exception e) {
-                    return McpToolResult.error("Unexpected error: " + e.getMessage());
-                }
-            }
-        };
-    }
-
-    private static McpTool toolNoCtx(final String name,
-                                     final String description,
-                                     final JsonObject schema,
-                                     final NoContextToolHandler handler) {
-        return new McpTool() {
-            @Override
-            public String name() {
-                return name;
-            }
-
-            @Override
-            public String description() {
-                return description;
-            }
-
-            @Override
-            public JsonObject inputSchema() {
-                return schema;
-            }
-
-            @Override
-            public McpToolResult call(final JsonValue arguments) {
-                try {
-                    final JsonValue args = arguments != null ? arguments : JsonObject.builder().build();
-                    final ToolResult result = handler.handle(args);
-                    return toMcpResult(result);
-                } catch (final IllegalArgumentException e) {
-                    return McpToolResult.error(e.getMessage());
-                } catch (final Exception e) {
-                    return McpToolResult.error("Unexpected error: " + e.getMessage());
-                }
-            }
-        };
-    }
-
-    private static McpToolResult toMcpResult(final ToolResult result) {
-        if (!result.success()) {
-            return McpToolResult.error(result.message());
-        }
-        final String text = result.data() != null
-            ? result.message() + "\n\n" + result.data()
-            : result.message();
-        if (result.artifacts().isEmpty()) {
-            return McpToolResult.text(text);
-        }
-        final List<McpContent.Resource> resources = result.artifacts().stream()
-            .map(a -> new McpResourceContent.Text(a.name(), a.mimeType(),
-                Base64.getEncoder().encodeToString(a.data())))
-            .map(McpContent.Resource::new)
-            .toList();
-        return McpToolResult.withResources(text, resources);
-    }
-
-    // --- Schema builders ---
-
-    private static JsonObject buildObjectSchema(final Map<String, JsonObject> properties,
-                                                final List<String> required) {
-        final var props = JsonObject.builder();
-        properties.forEach(props::put);
-        final var requiredArray = JsonArray.builder();
-        required.forEach(requiredArray::add);
-        return JsonObject.builder()
-            .put("type", "object")
-            .put("properties", props.build())
-            .put("required", requiredArray.build())
-            .build();
-    }
-
-    private static JsonObject emptySchema() {
-        return JsonObject.builder()
-            .put("type", "object")
-            .put("properties", JsonObject.builder().build())
-            .build();
-    }
-
-    private static JsonObject strProp(final String description) {
-        return JsonObject.builder()
-            .put("type", "string")
-            .put("description", description)
-            .build();
-    }
-
-    private static JsonObject intProp(final String description) {
-        return JsonObject.builder()
-            .put("type", "integer")
-            .put("description", description)
-            .build();
-    }
-
-    private static JsonObject enumProp(final String description, final List<String> values) {
-        final var enumArray = JsonArray.builder();
-        values.forEach(enumArray::add);
-        return JsonObject.builder()
-            .put("type", "string")
-            .put("description", description)
-            .put("enum", enumArray.build())
-            .build();
-    }
-
-    // --- Arg extractors ---
-
-    private static String str(final JsonValue args, final String key) {
-        final JsonValue node = args.get(key);
-        if (node instanceof JsonNull) {
-            throw new IllegalArgumentException("Missing required argument '" + key + "'.");
-        }
-        return node.asString().value();
-    }
-
-    private static String optStr(final JsonValue args, final String key) {
-        if (!args.asObject().has(key)) {
-            return null;
-        }
-        final String v = args.get(key).asString().value();
-        return v.isBlank() ? null : v;
-    }
-
-    private static Integer optInt(final JsonValue args, final String key) {
-        if (!args.asObject().has(key)) {
-            return null;
-        }
-        return args.get(key).asNumber().toNumber().intValue();
-    }
-
-    private static boolean has(final JsonValue args, final String key) {
-        return args.asObject().has(key);
+                "Existing voices are not cleared — call score.clear first if you want a fresh start.")
+            .param(abc)
+            .handle((ctx, args) -> SaveLoadTools.loadAbc(ctx, abc.extract(args)));
     }
 }
