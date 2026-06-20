@@ -52,10 +52,10 @@
 
         <!-- Module Dependency Versions -->
         <assertj.version>3.27.7</assertj.version>
-        <base.version>0.26.1</base.version>
-        <codemodel.version>0.23.0</codemodel.version>
+        <base.version>0.28.0</base.version>
+        <codemodel.version>0.24.0</codemodel.version>
         <junit.version>6.0.3</junit.version>
-        <serve.version>0.6.0</serve.version>
+        <serve.version>0.7.0</serve.version>
 
         <!-- Plugin Versions -->
         <build-helper-plugin.version>3.6.0</build-helper-plugin.version>
