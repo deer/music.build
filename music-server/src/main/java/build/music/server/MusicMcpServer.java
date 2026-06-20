@@ -15,6 +15,8 @@ import build.serve.health.HealthHandler;
 import build.serve.htmx.HtmxMiddleware;
 import build.serve.mcp.McpServer;
 
+import java.time.Duration;
+
 /**
  * Runnable MCP server that exposes music.build composition tools.
  * Mounts all tools at /mcp on port 3000, console UI at /.
@@ -40,11 +42,11 @@ public final class MusicMcpServer extends ServerApplication.Implementation {
             if (event.error().isPresent()) {
                 log.log(System.Logger.Level.WARNING,
                     "[tool] {0} failed in {1}ms: {2}",
-                    event.toolName(), event.durationMs(), event.error().get().getMessage());
+                    event.toolName(), event.duration().map(Duration::toMillis).orElse(0L), event.error().get().getMessage());
             } else {
                 log.log(System.Logger.Level.INFO,
                     "[tool] {0} completed in {1}ms",
-                    event.toolName(), event.durationMs());
+                    event.toolName(), event.duration().map(Duration::toMillis).orElse(0L));
             }
         });
 
@@ -54,7 +56,7 @@ public final class MusicMcpServer extends ServerApplication.Implementation {
                     .put("ts", event.timestamp().toString())
                     .put("tool", event.toolName())
                     .put("args", event.arguments())
-                    .put("durationMs", JsonNumber.of(event.durationMs()))
+                    .put("durationMs", JsonNumber.of(event.duration().map(Duration::toMillis).orElse(0L)))
                     .put("ok", JsonBoolean.of(event.error().isEmpty()));
                 event.error().ifPresent(err -> lineBuilder.put("error", err.getMessage()));
                 context.addSessionLogLine(lineBuilder.build().toJsonString());
@@ -63,11 +65,11 @@ public final class MusicMcpServer extends ServerApplication.Implementation {
             }
 
             if (event.error().isEmpty()) {
-                context.addSessionDisplayLine("ok\t" + event.toolName() + " (" + event.durationMs() + "ms)");
+                context.addSessionDisplayLine("ok\t" + event.toolName() + " (" + event.duration().map(Duration::toMillis).orElse(0L) + "ms)");
             } else {
                 final String msg = event.error().get().getMessage();
                 final String truncated = msg != null && msg.length() > 80 ? msg.substring(0, 80) + "…" : msg;
-                context.addSessionDisplayLine("err\t" + event.toolName() + " (" + event.durationMs() + "ms) — " + truncated);
+                context.addSessionDisplayLine("err\t" + event.toolName() + " (" + event.duration().map(Duration::toMillis).orElse(0L) + "ms) — " + truncated);
             }
         });
 
